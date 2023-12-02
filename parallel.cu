@@ -14,6 +14,7 @@
 #pragma hd_warning_disable
 #define MAX_THREADS 16
 #define FILENAME "data.txt"
+#define BLOCK_SIZE 16
 
 typedef struct {
   int width;
@@ -112,7 +113,18 @@ void InitializeMatrix(Matrix& mat, int width, int height, int realWidth, int rea
   }
 }
 
-__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time, int BLOCK_SIZE) {
+ __device__ Matrix GetSubMatrix(Matrix A, int row, int col)
+{
+    Matrix Asub;
+    Asub.width    = BLOCK_SIZE;
+    Asub.height   = BLOCK_SIZE;
+    Asub.stride   = A.stride;
+    Asub.elements = &A.elements[A.stride * BLOCK_SIZE * row
+                                         + BLOCK_SIZE * col];
+    return Asub;
+}
+
+__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
     
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -150,26 +162,21 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  int block_size;
-    if(n <= k){ 
-    block_size = min(MAX_THREADS, n);
-    } else { // k < n
-        block_size = min(MAX_THREADS, k);
-    }
+ 
 
     int A_width = n;
     int B_height = n;
     int A_height = N;
     int B_width = k; 
-    if(n % block_size != 0){
-        A_width += (block_size - (n % block_size));
-        B_height += (block_size - (n % block_size));
+    if(n % BLOCK_SIZE != 0){
+        A_width += (BLOCK_SIZE - (n % BLOCK_SIZE));
+        B_height += (BLOCK_SIZE - (n % BLOCK_SIZE));
     }
-    if(N % block_size != 0){
-        A_height += (block_size - (N % block_size));
+    if(N % BLOCK_SIZE != 0){
+        A_height += (BLOCK_SIZE - (N % BLOCK_SIZE));
     }
-    if(k % block_size != 0){
-        B_width += (block_size - (k % block_size));
+    if(k % BLOCK_SIZE != 0){
+        B_width += (BLOCK_SIZE - (k % BLOCK_SIZE));
     }
 
   Matrix A, B, C;
@@ -222,7 +229,7 @@ int main() {
 
   cudaMalloc(&d_C.elements, C.width * C.height * sizeof(float));
 
-  dim3 dimBlock(block_size, block_size); 
+  dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE); 
   dim3 dimGrid((int) ceil((double)B.width / (double)dimBlock.x),
                (int) ceil((double)A.height /(double) dimBlock.y)); 
 
@@ -230,7 +237,7 @@ int main() {
   unsigned long long* d_time;
   cudaMalloc(&d_time, sizeof(unsigned long long));
 
-  MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time, block_size); 
+  MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
   cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
   std::cout<<"Time: "<<time<<'\n';
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
