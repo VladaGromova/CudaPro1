@@ -220,6 +220,13 @@ int main() {
     }
     std::cout << std::endl;
   }
+  std::cout << "Matrix C:" << std::endl;
+  for (int i = 0; i < C.height; ++i) {
+    for (int j = 0; j < C.width; ++j) {
+      std::cout << GetElementCPU(C, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
   Matrix d_A, d_B, d_C;
   d_A.width = d_A.stride = A.width; 
   d_A.height = A.height;
