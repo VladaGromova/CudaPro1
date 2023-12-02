@@ -313,7 +313,7 @@ std:: cout<<'\n';
   int minIndex = 0;
   for (int i = 0; i < C.height; ++i) {
     for (int j = 0; j < C.width; ++j) {
-      std::cout<< "\nC[i][j] = " GetElementCPU(C, i, j)<<'\n';
+      std::cout<< "\nC[i][j] = "<< GetElementCPU(C, i, j)<<'\n';
       if (fabs(GetElementCPU(C, i, j) - minValue) < EPS) {
           minIndex = j;
       }
