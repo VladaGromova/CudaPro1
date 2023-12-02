@@ -175,7 +175,7 @@ __global__ void MinInEachRow(Matrix C, int* result) {
 }
 
 __global__ void CompareArrays(const int* array1, const int* array2, int size, int* count) {
-    __shared__ int localCounts[BLOCK_SIZE];
+    __shared__ int localCounts[MAX_THREADS_IN_BLOCK];
 
     int tid = threadIdx.x;
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -208,7 +208,6 @@ int main() {
   int n = atoi(inputString.c_str()); // real A width, real B height
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
-
 
     int A_width = n;
     int B_height = n;
