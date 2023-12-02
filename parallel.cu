@@ -40,45 +40,8 @@ void SetElementCPU(Matrix A, int row, int col, float value) {
   A.elements[row * A.stride + col] = value;
 }
 
- __device__ Matrix GetSubMatrix(Matrix A, int row, int col)
-{
-    Matrix Asub;
-    Asub.width    = BLOCK_SIZE;
-    Asub.height   = BLOCK_SIZE;
-    Asub.stride   = A.stride;
-    Asub.elements = &A.elements[A.stride * BLOCK_SIZE * row
-                                         + BLOCK_SIZE * col];
-    return Asub;
-}
 
-__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
-    
-    int blockRow = blockIdx.y;
-    int blockCol = blockIdx.x;
-    Matrix Csub = GetSubMatrix(C, blockRow, blockCol);
-    float Cvalue = 0;
-    int row = threadIdx.y;
-    int col = threadIdx.x;
-
-    unsigned long long startTime = clock();
-   for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
-        Matrix Asub = GetSubMatrix(A, blockRow, m);
-        Matrix Bsub = GetSubMatrix(B, m, blockCol);
-        __shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
-        __shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
-        As[row][col] = GetElement(Asub, row, col);
-        Bs[row][col] = GetElement(Bsub, row, col);
-        __syncthreads();
-        for (int e = 0; e < BLOCK_SIZE; ++e)
-            Cvalue += As[row][e] * Bs[e][col];
-        __syncthreads();
-    }
-    SetElement(Csub, row, col, Cvalue);
-    unsigned long long finishTime = clock();
-    *time = (finishTime - startTime);
-}
-
-void InitializeMatrix(Matrix& matA, int widthA, int heightA, int realWidthA, int realHeightA,
+void InitializeMatrices(Matrix& matA, int widthA, int heightA, int realWidthA, int realHeightA,
           Matrix& matB, int widthB, int heightB, int realWidthB, int realHeightB, std::istream& inputFile) {
   matA.width = widthA;
   matA.height = heightA;
@@ -96,7 +59,6 @@ void InitializeMatrix(Matrix& matA, int widthA, int heightA, int realWidthA, int
 
   std::string inputString;
   std::string word;
-  std::vector<Point> points;
   int i = 0;
   int j = 0;
   float value = 0.0f;
@@ -139,16 +101,15 @@ int main() {
 
   std::ifstream inputFile(FILENAME);
   std::string inputString;
-  std::vector<double> pointsFromString = {};
   getline(inputFile, inputString);
-  int N = stoi(inputString); // real A height
+  int N = atoi(inputString.c_str()); // real A height
   getline(inputFile, inputString);
-  int n = stoi(inputString); // real A width, real B height
+  int n = atoi(inputString.c_str()); // real A width, real B height
   getline(inputFile, inputString);
-  int k = stoi(inputString); // real B width
+  int k = atoi(inputString.c_str()); // real B width
 
   int block_size;
-  if(n <= k){ 
+    if(n <= k){ 
     block_size = min(MAX_THREADS, n);
     } else { // k < n
         block_size = min(MAX_THREADS, k);
