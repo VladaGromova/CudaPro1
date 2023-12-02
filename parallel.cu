@@ -160,17 +160,26 @@ __global__ void MinInEachRow(Matrix C, int* result) {
   float* matrix = C.elements;
   int rows = C.realHeight;
   int cols = C.realWidth;
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    int tid = threadIdx.x + blockIdx.x * blockDim.x; // nr wiersza
     if (tid < rows) {
-        float* row = matrix + tid * cols;
-        float minValue = row[0];
-        int minIndex = 0;
-        for (int i = 1; i < cols; i++) {
-            if (fabs(row[i] - minValue) < EPS) {
-                minIndex = i;
-            }
+      minValue = 999.9;
+      minIndex = 0;
+      for (int j = 0; j < C.realWidth; ++j) {
+        if (GetElement(C, i, j) < minValue) {
+          minValue = GetElement(C, tid, j);
+          minIndex = j;
         }
-        result[tid] = minIndex;
+      } 
+      result[tid] = minIndex;
+        // float* row = matrix + tid * cols;
+        // float minValue = row[0];
+        // int minIndex = 0;
+        // for (int i = 1; i < cols; i++) {
+        //     if (fabs(row[i] - minValue) < EPS) {
+        //         minIndex = i;
+        //     }
+        // }
+        // result[tid] = minIndex;
     }
 }
 
@@ -270,20 +279,6 @@ int* d_changes;
 int gridSize = C.height/MAX_THREADS_IN_BLOCK + 1;
 std::cout<<"gridSize: "<<gridSize<<'\n';
 
-// Matrix ctest, d_ctest;
-// ctest.height = ctest.realHeight = N;
-// ctest.width = ctest.width = 3;
-//  ctest.stride = width;  // Assuming a simple row-major layout where stride equals width
-//   ctest.elements = new float[ctest.width * ctest.height];
-//   float value = 0.0;
-//   for (int i = 0; i < ctest.height; ++i) {
-//     for (int j = 0; j < ctest.width; ++j) {
-//       SetElementCPU(ctest, i, j, value);
-//       ++value;
-//     }
-//   }
-// d_ctest.height = d_ctest.realHeight = N;
-
 while(numIters < 1 && (float)changes/(float)N > EPS){
    KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
    MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
@@ -311,10 +306,10 @@ std:: cout<<'\n';
   std::cout<<"CPU min in each row:"<<'\n';
   float minValue = 999.9;
   int minIndex = 0;
-  for (int i = 0; i < C.height; ++i) {
+  for (int i = 0; i < C.realHeight; ++i) {
     minValue = 999.9;
     minIndex = 0;
-    for (int j = 0; j < C.width; ++j) {
+    for (int j = 0; j < C.realWidth; ++j) {
       if (GetElementCPU(C, i, j) < minValue) {
         minValue = GetElementCPU(C, i, j);
           minIndex = j;
