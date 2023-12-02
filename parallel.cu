@@ -268,7 +268,7 @@ int gridSize = (C.realHeight + BLOCK_SIZE - 1) / BLOCK_SIZE;
 while(numIters < 1 && (float)changes/(float)N > EPS){
   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
    MinInEachRow<<<gridSize, BLOCK_SIZE>>>(d_C, d_newassignments);
-  cudaMemcpy(&newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(&newassignments, d_newassignments, N*sizeof(float), cudaMemcpyDeviceToHost);
   ++numIters;
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
 }
