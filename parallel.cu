@@ -1,3 +1,4 @@
+#include <cfloat>
 #include <climits>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -105,7 +106,7 @@ void InitializeMatrix(Matrix& mat, int width, int height, int realWidth, int rea
   mat.realHeight = realHeight;
   mat.stride = width;  // Assuming a simple row-major layout where stride equals width
   mat.elements = new float[width * height];
-  float value = 0.0f;
+  float value = FLT_MAX;
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
       SetElementCPU(mat, i, j, value);
@@ -129,7 +130,7 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
     Matrix Csub = GetSubMatrix(C, blockRow, blockCol);
-    float Cvalue = 0;
+    float Cvalue = 0.0;
     int row = threadIdx.y;
     int col = threadIdx.x;
 
@@ -147,7 +148,9 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         }
         __syncthreads();
     }
-    SetElement(Csub, row, col, sqrt(Cvalue));
+    if(GetElement(Csub, row, col) != FLT_MAX){
+      SetElement(Csub, row, col, sqrt(Cvalue));
+    }
     unsigned long long finishTime = clock();
     *time = (finishTime - startTime);
 }
