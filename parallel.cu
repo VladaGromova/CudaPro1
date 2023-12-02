@@ -181,7 +181,7 @@ int main() {
   InitializeMatrix(C, B_width, A_height, k, N);
   inputFile.close();
   std::cout << "Matrix A:" << std::endl;
-  for (int i = 0; i < A.realHeight; ++i) {
+  for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < A.realWidth; ++j) {
       std::cout << GetElementCPU(A, i, j) << " ";
     }
@@ -189,7 +189,7 @@ int main() {
   }
 
   std::cout << "Matrix B:" << std::endl;
-  for (int i = 0; i < B.realHeight; ++i) {
+  for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < B.realWidth; ++j) {
       std::cout << GetElementCPU(B, i, j) << " ";
     }
@@ -232,7 +232,7 @@ int main() {
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.realHeight; ++i) {
+  for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < C.realWidth; ++j) {
       std::cout << GetElementCPU(C, i, j) << " ";
     }
