@@ -314,7 +314,7 @@ std:: cout<<'\n';
   for (int i = 0; i < C.height; ++i) {
     for (int j = 0; j < C.width; ++j) {
       if (GetElementCPU(C, i, j) < minValue) {
-        std::cout<<"min index changing to "<< j<<'\n';
+        minValue = GetElementCPU(C, i, j);
           minIndex = j;
       }
     }
