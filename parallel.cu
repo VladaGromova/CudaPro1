@@ -166,7 +166,7 @@ __global__ void MinInEachRow(Matrix C, int* result) {
         float minValue = row[0];
         int minIndex = 0;
         for (int i = 1; i < cols; i++) {
-            if (row[i] < minValue) {
+            if (fabs(row[i] - minValue) < EPS) {
                 minIndex = i;
             }
         }
@@ -269,8 +269,23 @@ int* d_changes;
   cudaMalloc(&d_changes, sizeof(int));
 int gridSize = C.height/MAX_THREADS_IN_BLOCK + 1;
 std::cout<<"gridSize: "<<gridSize<<'\n';
+
+// Matrix ctest, d_ctest;
+// ctest.height = ctest.realHeight = N;
+// ctest.width = ctest.width = 3;
+//  ctest.stride = width;  // Assuming a simple row-major layout where stride equals width
+//   ctest.elements = new float[ctest.width * ctest.height];
+//   float value = 0.0;
+//   for (int i = 0; i < ctest.height; ++i) {
+//     for (int j = 0; j < ctest.width; ++j) {
+//       SetElementCPU(ctest, i, j, value);
+//       ++value;
+//     }
+//   }
+// d_ctest.height = d_ctest.realHeight = N;
+
 while(numIters < 1 && (float)changes/(float)N > EPS){
-  KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
+   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
    MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
@@ -293,6 +308,18 @@ std:: cout<<'\n';
     }
     std::cout << std::endl;
   }
+  std::cout<<"CPU min in each row:"<<'\n';
+  float minValue = 999.9;
+  int minIndex =0;
+  for (int i = 0; i < C.height; ++i) {
+    for (int j = 0; j < C.width; ++j) {
+      if (fabs(GetElementCPU(C, i, j) - minValue) < EPS) {
+          minIndex = j;
+      }
+    }
+    std::cout <<minIndex<<' ';
+  }
+    std::cout << std::endl;
 
 delete[] A.elements;
 delete[] B.elements;
