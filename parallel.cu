@@ -175,20 +175,27 @@ __global__ void MinInEachRow(Matrix C, int* result) {
 }
 
 __global__ void CompareArrays(const float* array1, const float* array2, int size, int* count) {
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = blockDim.x * gridDim.x;
+    __shared__ int localCounts[BLOCK_SIZE];
 
-    int localCount = 0;
-    for (int i = tid; i < size; i += stride) {
+    int tid = threadIdx.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int gridSize = blockDim.x * gridDim.x;
+
+    localCounts[tid] = 0;
+    for (int i = idx; i < size; i += gridSize) {
         if (array1[i] != array2[i]) {
-            localCount++;
+            localCounts[tid]++;
         }
     }
+    __syncthreads();
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        localCount += __shfl_down_sync(0xFFFFFFFF, localCount, stride);
+        if (tid < stride) {
+            localCounts[tid] += localCounts[tid + stride];
+        }
+        __syncthreads();
     }
-    if (threadIdx.x == 0) {
-        atomicAdd(count, localCount);
+    if (tid == 0) {
+        atomicAdd(count, localCounts[0]);
     }
 }
 
