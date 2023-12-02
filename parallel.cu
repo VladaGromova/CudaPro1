@@ -9,7 +9,7 @@
 
 #pragma hd_warning_disable
 #define MAX_THREADS 16
-#define FILENAME "data.txt"
+#define FILENAME "points_generated.txt"
 #define BLOCK_SIZE 16
 
 typedef struct {
