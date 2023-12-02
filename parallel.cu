@@ -254,10 +254,10 @@ int main() {
   cudaMalloc(&d_assignments, N * sizeof(int));
   cudaMemcpy(d_assignments, assignments, N * sizeof(int), cudaMemcpyHostToDevice);
 
-  int* newassignments = new int[N];
-  int* d_newassignments;
-  cudaMalloc(&d_newassignments, N * sizeof(int));
-  cudaMemcpy(d_newassignments, newassignments, N * sizeof(int), cudaMemcpyHostToDevice);
+  float* newassignments = new float[N];
+  float* d_newassignments;
+  cudaMalloc(&d_newassignments, N * sizeof(float));
+  cudaMemcpy(d_newassignments, newassignments, N * sizeof(float), cudaMemcpyHostToDevice);
 
 int numIters = 0;
 int changes = INT_MAX;
