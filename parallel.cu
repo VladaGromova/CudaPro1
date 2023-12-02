@@ -255,6 +255,10 @@ int main() {
   cudaMemcpy(d_assignments, assignments, N * sizeof(int), cudaMemcpyHostToDevice);
 
   float* newassignments = new float[N];
+  std::fill(newassignments, newassignments + N, 0.0);
+  for (int i=0; i<N; ++i) {
+  std::cout<<newassignments[i]<<' ';
+}
   float* d_newassignments;
   cudaMalloc(&d_newassignments, N * sizeof(float));
   cudaMemcpy(d_newassignments, newassignments, N * sizeof(float), cudaMemcpyHostToDevice);
@@ -274,7 +278,7 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
 }
 std::cout<< "Min in each row:\n";
 for (int i=0; i<N; ++i) {
-std::cout<<newassignments[i]<<' ';
+  std::cout<<newassignments[i]<<' ';
 }
 std:: cout<<'\n';
 
@@ -294,6 +298,7 @@ delete[] A.elements;
 delete[] B.elements;
 delete[] C.elements;
 delete[] assignments;
+delete[] newassignments;
   cudaFree(d_A.elements);
   cudaFree(d_B.elements);
   cudaFree(d_C.elements);
