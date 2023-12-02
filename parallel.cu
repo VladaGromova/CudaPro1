@@ -97,16 +97,31 @@ void InitializeMatrices(Matrix& matA, int widthA, int heightA, int realWidthA, i
   }
 }
 
+void InitializeMatrix(Matrix& mat, int width, int height, int realWidth, int realHeight) {
+  mat.width = width;
+  mat.height = height;
+  mat.realWidth = realWidth;
+  mat.realHeight = realHeight;
+  mat.stride = width;  // Assuming a simple row-major layout where stride equals width
+  mat.elements = new float[width * height];
+  float value = 0.0f;
+  for (int i = 0; i < height; ++i) {
+    for (int j = 0; j < width; ++j) {
+      SetElementCPU(mat, i, j, value);
+    }
+  }
+}
+
 int main() {
 
   std::ifstream inputFile(FILENAME);
   std::string inputString;
   getline(inputFile, inputString);
-  int N = atoi(inputString.c_str()); // real A height
+  int N = atoi(inputString.c_str()); // real A height, real C height
   getline(inputFile, inputString);
   int n = atoi(inputString.c_str()); // real A width, real B height
   getline(inputFile, inputString);
-  int k = atoi(inputString.c_str()); // real B width
+  int k = atoi(inputString.c_str()); // real B width, real C width
 
   int block_size;
     if(n <= k){ 
@@ -130,8 +145,9 @@ int main() {
         B_width += (block_size - (k % block_size));
     }
 
-  Matrix A, B;
+  Matrix A, B, C;
   InitializeMatrices(A, A_width, A_height, n, N, B, B_width, B_height, k, n, inputFile);
+  InitializeMatrix(C, B_width, A_height, k, N);
   inputFile.close();
   std::cout << "Matrix A:" << std::endl;
   for (int i = 0; i < A.height; ++i) {
@@ -145,6 +161,13 @@ int main() {
   for (int i = 0; i < B.height; ++i) {
     for (int j = 0; j < B.width; ++j) {
       std::cout << GetElementCPU(B, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << "Matrix C:" << std::endl;
+  for (int i = 0; i < C.height; ++i) {
+    for (int j = 0; j < C.width; ++j) {
+      std::cout << GetElementCPU(C, i, j) << " ";
     }
     std::cout << std::endl;
   }
