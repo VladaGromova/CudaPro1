@@ -148,7 +148,7 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         }
         __syncthreads();
     }
-    if(fabs(GetElement(Csub, row, col) - FLT_MAX) < EPS){
+    if(fabs(GetElement(Csub, row, col) - FLT_MAX) > EPS){
       SetElement(Csub, row, col, sqrt(Cvalue));
     }
     unsigned long long finishTime = clock();
