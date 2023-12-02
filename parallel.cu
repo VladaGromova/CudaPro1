@@ -310,7 +310,7 @@ std:: cout<<'\n';
   }
   std::cout<<"CPU min in each row:"<<'\n';
   float minValue = 999.9;
-  int minIndex =0;
+  int minIndex = 0;
   for (int i = 0; i < C.height; ++i) {
     for (int j = 0; j < C.width; ++j) {
       std::cout<< "\nC[i][j] = " GetElementCPU(C, i, j)<<'\n';
@@ -333,5 +333,6 @@ delete[] newassignments;
   cudaFree(d_time);
   cudaFree(d_assignments);
   cudaFree(d_changes);
+  std::cout<<"\nBye!\n";
   return 0;
 }
