@@ -312,15 +312,15 @@ std:: cout<<'\n';
   float minValue = 999.9;
   int minIndex = 0;
   for (int i = 0; i < C.height; ++i) {
+    minValue = 999.9;
+    minIndex = 0;
     for (int j = 0; j < C.width; ++j) {
       if (GetElementCPU(C, i, j) < minValue) {
-        std:: cout<<"Min value and minIndex changing: "<< GetElementCPU(C, i, j)<<" min ind: "<<j<<'\n';
         minValue = GetElementCPU(C, i, j);
           minIndex = j;
       }
     }
     std::cout <<minIndex<<' ';
-    minIndex = 0;
   }
     std::cout << std::endl;
 
