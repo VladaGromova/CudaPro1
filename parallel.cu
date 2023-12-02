@@ -268,7 +268,7 @@ int changes = INT_MAX;
 int* d_changes;
   cudaMalloc(&d_changes, sizeof(int));
 int gridSize = C.height/MAX_THREADS_IN_BLOCK + 1;
-
+std::cout<<"gridSize: "<<gridSize<<'\n';
 while(numIters < 1 && (float)changes/(float)N > EPS){
   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
    MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
