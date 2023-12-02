@@ -135,6 +135,7 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
     int col = threadIdx.x;
 
     unsigned long long startTime = clock();
+    if(fabs(GetElement(Csub, row, col) - FLT_MAX) < EPS){
    for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
         Matrix Asub = GetSubMatrix(A, blockRow, m);
         Matrix Bsub = GetSubMatrix(B, m, blockCol);
@@ -148,7 +149,7 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         }
         __syncthreads();
     }
-    if(GetElement(Csub, row, col) != FLT_MAX){
+    
       SetElement(Csub, row, col, sqrt(Cvalue));
     }
     unsigned long long finishTime = clock();
