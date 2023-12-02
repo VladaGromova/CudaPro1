@@ -314,11 +314,13 @@ std:: cout<<'\n';
   for (int i = 0; i < C.height; ++i) {
     for (int j = 0; j < C.width; ++j) {
       if (GetElementCPU(C, i, j) < minValue) {
+        std:: cout<<"Min value and minIndex changing: "<< GetElementCPU(C, i, j)<<" min ind: "<<j<<'\n';
         minValue = GetElementCPU(C, i, j);
           minIndex = j;
       }
     }
     std::cout <<minIndex<<' ';
+    minIndex = 0;
   }
     std::cout << std::endl;
 
