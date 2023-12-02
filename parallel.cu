@@ -1,11 +1,7 @@
-#include <assert.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
 #include <stdlib.h>
-#include <limits>
-#include <vector>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -143,7 +139,7 @@ __global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         Bs[row][col] = GetElement(Bsub, row, col);
         __syncthreads();
         for (int e = 0; e < BLOCK_SIZE; ++e)
-            Cvalue += As[row][e] * Bs[e][col];
+            Cvalue += pow(As[row][e] - Bs[e][col],2);
         __syncthreads();
     }
     SetElement(Csub, row, col, Cvalue);
