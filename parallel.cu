@@ -174,6 +174,24 @@ __global__ void MinInEachRow(Matrix C, int* result) {
     }
 }
 
+__global__ void CompareArrays(const float* array1, const float* array2, int size, int* count) {
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x;
+
+    int localCount = 0;
+    for (int i = tid; i < size; i += stride) {
+        if (array1[i] != array2[i]) {
+            localCount++;
+        }
+    }
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        localCount += __shfl_down_sync(0xFFFFFFFF, localCount, stride);
+    }
+    if (threadIdx.x == 0) {
+        atomicAdd(count, localCount);
+    }
+}
+
 int main() {
   std::ifstream inputFile(FILENAME);
   std::string inputString;
@@ -265,17 +283,21 @@ int main() {
 int numIters = 0;
 int changes = INT_MAX;
 int* d_changes;
-  cudaMalloc(&d_changes, sizeof(int));
-int gridSize = C.height/MAX_THREADS_IN_BLOCK + 1;
+cudaMalloc(&d_changes, sizeof(int));
+cudaMemset(d_changes, 0, sizeof(int));
+
+int gridSize = C.realHeight/MAX_THREADS_IN_BLOCK + 1;
 std::cout<<"gridSize: "<<gridSize<<'\n';
 
 while(numIters < 1 && (float)changes/(float)N > EPS){
-   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
-   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
-  ++numIters;
+  KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
+  MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
+  CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
+  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+  ++numIters;
 }
+std::cout << "\nNumber of different elements: " << changes << std::endl;
 std::cout<< "Min in each row:\n";
 for (int i=0; i<N; ++i) {
   std::cout<<newassignments[i]<<' ';
