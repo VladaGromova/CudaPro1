@@ -126,7 +126,7 @@ void InitializeMatrix(Matrix& mat, int width, int height, int realWidth, int rea
     return Asub;
 }
 
-__global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
+__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
     
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -197,6 +197,17 @@ __global__ void CompareArrays(const int* array1, const int* array2, int size, in
     if (tid == 0) {
         atomicAdd(count, localCounts[0]);
     }
+}
+
+__global__ void ComputeSum(Matrix matA, const int* groups, Matrix matB, int N, int k, int n) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < N) {
+        int groupId = groups[tid];
+        for (int i = 0; i < n; ++i) {
+            atomicAdd(&matB.elements[i * matB.stride + groupId] , GetElement(matA, tid, i));
+        }
+    }
+   __syncthreads();
 }
 
 int main() {
@@ -296,10 +307,12 @@ int gridSize = C.realHeight/MAX_THREADS_IN_BLOCK + 1;
 std::cout<<"gridSize: "<<gridSize<<'\n';
 
 while(numIters < 1 && (float)changes/(float)N > EPS){
-  KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
+  CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time);
+  cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n);
+  //cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
 }
@@ -309,6 +322,16 @@ for (int i=0; i<N; ++i) {
   std::cout<<newassignments[i]<<' ';
 }
 std:: cout<<'\n';
+
+ cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
+             cudaMemcpyDeviceToHost);
+  std::cout << "Matrix B:" << std::endl;
+  for (int i = 0; i < B.realHeight; ++i) {
+    for (int j = 0; j < B.realWidth; ++j) {
+      std::cout << GetElementCPU(B, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
 
   cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
   std::cout<<"Time: "<<time<<'\n';
