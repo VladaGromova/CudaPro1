@@ -299,12 +299,12 @@ std::cout<<"gridSize: "<<gridSize<<'\n';
 while(numIters < 1 && (float)changes/(float)N > EPS){
   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
-  CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
+  //CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
 }
-std::cout << "\nNumber of different elements: " << changes << std::endl;
+//std::cout << "\nNumber of different elements: " << changes << std::endl;
 std::cout<< "Min in each row:\n";
 for (int i=0; i<N; ++i) {
   std::cout<<newassignments[i]<<' ';
