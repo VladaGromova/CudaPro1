@@ -1,3 +1,4 @@
+#include <climits>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cmath>
@@ -6,12 +7,14 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 #pragma hd_warning_disable
-#define MAX_THREADS 16
 //#define FILENAME "points_generated.txt"
 #define FILENAME "data.txt"
 #define BLOCK_SIZE 16
+#define MAX_ITERATIONS 100
+#define EPS 0.000001
 
 typedef struct {
   int width;
@@ -121,7 +124,7 @@ void InitializeMatrix(Matrix& mat, int width, int height, int realWidth, int rea
     return Asub;
 }
 
-__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
+__global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* time) {
     
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
@@ -144,9 +147,28 @@ __global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         }
         __syncthreads();
     }
-    SetElement(Csub, row, col, Cvalue);
+    SetElement(Csub, row, col, sqrt(Cvalue));
     unsigned long long finishTime = clock();
     *time = (finishTime - startTime);
+}
+
+__global__ void MinInEachRow(Matrix C, float* result) {
+  float* matrix = C.elements;
+  int rows = C.realHeight;
+  int cols = C.realWidth;
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if (tid < rows) {
+        float* row = matrix + tid * cols;
+        for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+            if (threadIdx.x < stride) {
+                row[threadIdx.x] = fminf(row[threadIdx.x], row[threadIdx.x + stride]);
+            }
+            __syncthreads();
+        }
+        if (threadIdx.x == 0) {
+            result[tid] = row[0];
+        }
+    }
 }
 
 int main() {
@@ -226,7 +248,36 @@ int main() {
   unsigned long long* d_time;
   cudaMalloc(&d_time, sizeof(unsigned long long));
 
-  MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
+  int* assignments = new int[N];
+  std::fill(assignments, assignments + N, 0);
+  int* d_assignments;
+  cudaMalloc(&d_assignments, N * sizeof(int));
+  cudaMemcpy(d_assignments, assignments, N * sizeof(int), cudaMemcpyHostToDevice);
+
+  int* newassignments = new int[N];
+  int* d_newassignments;
+  cudaMalloc(&d_newassignments, N * sizeof(int));
+  cudaMemcpy(d_newassignments, newassignments, N * sizeof(int), cudaMemcpyHostToDevice);
+
+int numIters = 0;
+int changes = INT_MAX;
+int* d_changes;
+  cudaMalloc(&d_changes, sizeof(int));
+int gridSize = (C.realHeight + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+while(numIters < 1 && (float)changes/(float)N > EPS){
+  KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
+   MinInEachRow<<<gridSize, BLOCK_SIZE>>>(d_C, d_newassignments);
+  cudaMemcpy(&newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
+  ++numIters;
+  cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+}
+std::cout<< "Min in each row:\n";
+for (int i=0; i<N; ++i) {
+std::cout<<newassignments[i]<<' ';
+}
+std:: cout<<'\n';
+
   cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
   std::cout<<"Time: "<<time<<'\n';
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
@@ -239,9 +290,15 @@ int main() {
     std::cout << std::endl;
   }
 
+delete[] A.elements;
+delete[] B.elements;
+delete[] C.elements;
+delete[] assignments;
   cudaFree(d_A.elements);
   cudaFree(d_B.elements);
   cudaFree(d_C.elements);
   cudaFree(d_time);
+  cudaFree(d_assignments);
+  cudaFree(d_changes);
   return 0;
 }
