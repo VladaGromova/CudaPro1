@@ -287,8 +287,8 @@ std:: cout<<'\n';
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.realHeight; ++i) {
-    for (int j = 0; j < C.realWidth; ++j) {
+  for (int i = 0; i < C.height; ++i) {
+    for (int j = 0; j < C.width; ++j) {
       std::cout << GetElementCPU(C, i, j) << " ";
     }
     std::cout << std::endl;
