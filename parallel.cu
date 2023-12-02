@@ -174,7 +174,7 @@ __global__ void MinInEachRow(Matrix C, int* result) {
     }
 }
 
-__global__ void CompareArrays(const float* array1, const float* array2, int size, int* count) {
+__global__ void CompareArrays(const int* array1, const int* array2, int size, int* count) {
     __shared__ int localCounts[BLOCK_SIZE];
 
     int tid = threadIdx.x;
