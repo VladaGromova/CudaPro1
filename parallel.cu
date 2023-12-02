@@ -159,8 +159,8 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
 __global__ void MinInEachRow(Matrix C, int* result) {
   int rows = C.realHeight;
     int tid = threadIdx.x + blockIdx.x * blockDim.x; // nr wiersza
-      minValue = 999.9;
-      minIndex = 0;
+      float minValue = 999.9;
+      int minIndex = 0;
     if (tid < rows) {
       for (int j = 0; j < C.realWidth; ++j) {
         if (GetElement(C, tid, j) < minValue) {
