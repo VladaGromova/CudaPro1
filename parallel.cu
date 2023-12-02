@@ -138,8 +138,9 @@ __global__ void MatMulKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
         As[row][col] = GetElement(Asub, row, col);
         Bs[row][col] = GetElement(Bsub, row, col);
         __syncthreads();
-        for (int e = 0; e < BLOCK_SIZE; ++e)
+        for (int e = 0; e < BLOCK_SIZE; ++e){
             Cvalue += pow(As[row][e] - Bs[e][col],2);
+        }
         __syncthreads();
     }
     SetElement(Csub, row, col, Cvalue);
@@ -180,28 +181,20 @@ int main() {
   InitializeMatrix(C, B_width, A_height, k, N);
   inputFile.close();
   std::cout << "Matrix A:" << std::endl;
-  for (int i = 0; i < A.height; ++i) {
-    for (int j = 0; j < A.width; ++j) {
+  for (int i = 0; i < A.realHeight; ++i) {
+    for (int j = 0; j < A.realWidth; ++j) {
       std::cout << GetElementCPU(A, i, j) << " ";
     }
     std::cout << std::endl;
   }
 
   std::cout << "Matrix B:" << std::endl;
-  for (int i = 0; i < B.height; ++i) {
-    for (int j = 0; j < B.width; ++j) {
+  for (int i = 0; i < B.realHeight; ++i) {
+    for (int j = 0; j < B.realWidth; ++j) {
       std::cout << GetElementCPU(B, i, j) << " ";
     }
     std::cout << std::endl;
   }
-  std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.height; ++i) {
-    for (int j = 0; j < C.width; ++j) {
-      std::cout << GetElementCPU(C, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
-
   Matrix d_A, d_B, d_C;
   d_A.width = d_A.stride = A.width; 
   d_A.height = A.height;
@@ -239,8 +232,8 @@ int main() {
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.height; ++i) {
-    for (int j = 0; j < C.width; ++j) {
+  for (int i = 0; i < C.realHeight; ++i) {
+    for (int j = 0; j < C.realWidth; ++j) {
       std::cout << GetElementCPU(C, i, j) << " ";
     }
     std::cout << std::endl;
