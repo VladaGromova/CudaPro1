@@ -16,6 +16,7 @@
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
 #define EPS 0.000001
+#define MAX_THREADS_IN_BLOCK 512
 
 typedef struct {
   int width;
@@ -162,15 +163,14 @@ __global__ void MinInEachRow(Matrix C, float* result) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid < rows) {
         float* row = matrix + tid * cols;
-        for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-            if (threadIdx.x < stride) {
-                row[threadIdx.x] = fminf(row[threadIdx.x], row[threadIdx.x + stride]);
+        float minValue = row[0];
+        int minIndex = 0;
+        for (int i = 1; i < cols; i++) {
+            if (row[i] < minValue) {
+                minIndex = i;
             }
-            __syncthreads();
         }
-        if (threadIdx.x == 0) {
-            result[tid] = row[0];
-        }
+        minIndices[tid] = minIndex;
     }
 }
 
@@ -257,22 +257,22 @@ int main() {
   cudaMalloc(&d_assignments, N * sizeof(int));
   cudaMemcpy(d_assignments, assignments, N * sizeof(int), cudaMemcpyHostToDevice);
 
-  float* newassignments = new float[N];
-  std::fill(newassignments, newassignments + N, 0.0);
-  float* d_newassignments;
-  cudaMalloc(&d_newassignments, N * sizeof(float));
-  cudaMemcpy(d_newassignments, newassignments, N * sizeof(float), cudaMemcpyHostToDevice);
+  int* newassignments = new int[N];
+  std::fill(newassignments, newassignments + N, 0);
+  int* d_newassignments;
+  cudaMalloc(&d_newassignments, N * sizeof(int));
+  cudaMemcpy(d_newassignments, newassignments, N * sizeof(int), cudaMemcpyHostToDevice);
 
 int numIters = 0;
 int changes = INT_MAX;
 int* d_changes;
   cudaMalloc(&d_changes, sizeof(int));
-int gridSize = (C.realHeight + BLOCK_SIZE - 1) / BLOCK_SIZE;
+int gridSize = C.height/MAX_THREADS_IN_BLOCK + 1;
 
 while(numIters < 1 && (float)changes/(float)N > EPS){
   KmeansKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time); 
-   MinInEachRow<<<gridSize, BLOCK_SIZE>>>(d_C, d_newassignments);
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(float), cudaMemcpyDeviceToHost);
+   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
+  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
 }
