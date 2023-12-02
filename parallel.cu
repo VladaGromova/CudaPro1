@@ -156,7 +156,7 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
     *time = (finishTime - startTime);
 }
 
-__global__ void MinInEachRow(Matrix C, float* result) {
+__global__ void MinInEachRow(Matrix C, int* result) {
   float* matrix = C.elements;
   int rows = C.realHeight;
   int cols = C.realWidth;
@@ -170,7 +170,7 @@ __global__ void MinInEachRow(Matrix C, float* result) {
                 minIndex = i;
             }
         }
-        minIndices[tid] = minIndex;
+        result[tid] = minIndex;
     }
 }
 
