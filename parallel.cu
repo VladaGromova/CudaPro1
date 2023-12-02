@@ -169,15 +169,6 @@ __global__ void MinInEachRow(Matrix C, int* result) {
         }
       } 
       result[tid] = minIndex;
-        // float* row = matrix + tid * cols;
-        // float minValue = row[0];
-        // int minIndex = 0;
-        // for (int i = 1; i < cols; i++) {
-        //     if (fabs(row[i] - minValue) < EPS) {
-        //         minIndex = i;
-        //     }
-        // }
-        // result[tid] = minIndex;
     }
 }
 
@@ -295,27 +286,13 @@ std:: cout<<'\n';
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.height; ++i) {
-    for (int j = 0; j < C.width; ++j) {
+  for (int i = 0; i < C.realHeight; ++i) {
+    for (int j = 0; j < C.realWidth; ++j) {
       std::cout << GetElementCPU(C, i, j) << " ";
     }
     std::cout << std::endl;
   }
-  std::cout<<"CPU min in each row:"<<'\n';
-  float minValue = 999.9;
-  int minIndex = 0;
-  for (int i = 0; i < C.realHeight; ++i) {
-    minValue = 999.9;
-    minIndex = 0;
-    for (int j = 0; j < C.realWidth; ++j) {
-      if (GetElementCPU(C, i, j) < minValue) {
-        minValue = GetElementCPU(C, i, j);
-          minIndex = j;
-      }
-    }
-    std::cout <<minIndex<<' ';
-  }
-    std::cout << std::endl;
+ 
 
 delete[] A.elements;
 delete[] B.elements;
