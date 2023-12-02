@@ -159,9 +159,11 @@ __global__ void KmeansKernel(Matrix A, Matrix B, Matrix C, unsigned long long* t
 __global__ void MinInEachRow(Matrix C, int* result) {
   int rows = C.realHeight;
     int tid = threadIdx.x + blockIdx.x * blockDim.x; // nr wiersza
-      float minValue = 999.9;
-      int minIndex = 0;
+      float minValue;
+      int minIndex;
     if (tid < rows) {
+      minValue = GetElement(C, tid, 0);
+      minIndex = 0;
       for (int j = 0; j < C.realWidth; ++j) {
         if (GetElement(C, tid, j) < minValue) {
           minValue = GetElement(C, tid, j);
@@ -173,7 +175,6 @@ __global__ void MinInEachRow(Matrix C, int* result) {
 }
 
 int main() {
-
   std::ifstream inputFile(FILENAME);
   std::string inputString;
   getline(inputFile, inputString);
