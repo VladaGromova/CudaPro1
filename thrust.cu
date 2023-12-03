@@ -95,7 +95,7 @@ int main() {
         thrust::make_zip_iterator(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin())),
         thrust::make_zip_iterator(thrust::make_tuple(specialVector.end(), collectionOfVectors.end())),
         distances.begin(),
-        EuclideanDistance(d_specialVector, VECTOR_SIZE)
+        EuclideanDistance(d_specialVector, n)
     );
 
 thrust::host_vector<float> distances_host = distances;
