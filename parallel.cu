@@ -18,7 +18,9 @@
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
-#define MAX_THREADS_IN_BLOCK 512
+//#define MAX_THREADS_IN_BLOCK 512
+
+#define MAX_THREADS_IN_BLOCK 16
 
 typedef struct {
   int width;
