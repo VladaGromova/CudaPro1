@@ -56,6 +56,7 @@ int main() {
     ++indexOfVector;
   }
 
+  inputFile.close();
     std::cout << "Points Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
       std::cout<<"x_"<<i<<": ";
@@ -65,7 +66,6 @@ int main() {
         std::cout << std::endl;
     }
 
-    // Print the contents of centroidArray
     std::cout << "\nCentroids Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
       std::cout<<"x_"<<i<<": ";
@@ -75,7 +75,21 @@ int main() {
         std::cout << std::endl;
     }
 
-  inputFile.close();
+   std::vector<thrust::device_vector<float> > distToCentroids(k); // Each vector represents a dimension
+
+   for (int i = 0; i < n; ++i) {
+        float distance = thrust::transform_reduce(
+            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].begin(), centroidArray[i].begin())),
+            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].end(), centroidArray[i].end())),
+            SquaredDistance(n),
+            0.0f,
+            thrust::plus<float>()
+        );
+        distance = sqrt(distance);
+        std:: cout<<distance<<' ';
+        // Use the calculated distance as needed
+        // For example, store or perform further operations with distances
+    }
 
   std::cout<<"\nBye!\n";
   return 0;
