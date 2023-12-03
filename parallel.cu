@@ -199,12 +199,13 @@ __global__ void CompareArrays(const int* array1, const int* array2, int size, in
     }
 }
 
-__global__ void ComputeSum(Matrix matA, const int* groups, Matrix matB, int N, int k, int n) {
+__global__ void ComputeSum(Matrix matA, const int* groups, Matrix matB, int N, int k, int n, int* numOfVectors) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < N) {
         int groupId = groups[tid];
         for (int i = 0; i < n; ++i) {
             atomicAdd(&matB.elements[i * matB.stride + groupId] , GetElement(matA, tid, i));
+            atomicAdd(&numOfVectors[groupId], 1);
         }
     }
    __syncthreads();
@@ -297,6 +298,12 @@ int main() {
   cudaMalloc(&d_newassignments, N * sizeof(int));
   cudaMemcpy(d_newassignments, newassignments, N * sizeof(int), cudaMemcpyHostToDevice);
 
+  int* numOfVectorsInClusters = new int[k];
+  std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
+  int* d_numOfVectorsInClusters;
+  cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
+  cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
+
 int numIters = 0;
 int changes = INT_MAX;
 int* d_changes;
@@ -311,10 +318,15 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
   cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
-  ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n);
+  ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, N*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
+}
+std::cout<<"num of vectors in clusters: \n";
+for (int i=0; i<k; ++i) {
+  std::cout<<numOfVectorsInClusters[i]<<' ';
 }
 std::cout << "\nNumber of different elements: " << changes << std::endl;
 std::cout<< "Min in each row:\n";
