@@ -332,6 +332,7 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_B, d_numOfVectorsInClusters, k, n);
   cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int), cudaMemcpyDeviceToDevice);
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+  std::cout<<"Changes: "<<changes<<'\n';
   ++numIters;
 }
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
