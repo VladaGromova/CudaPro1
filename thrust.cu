@@ -92,9 +92,16 @@ int main() {
    std::vector<thrust::device_vector<float> > distToCentroids(k); // Each vector represents a dimension
 
 thrust::device_vector<float> coords;
+
+
 for (int j=0; j<k; ++j){
   std:: cout<< "\nFor "<< j<<" centroid: \n";
   for (int i = 0; i < n; ++i) {
+    std::cout<<"coords??\n";
+    for (size_t iii = 0; iii < pointsArray[i].size(); ++iii) {
+            std::cout << pointsArray[i][iii] << " ";
+        }
+        std:: cout<<'\nConstnt '<<centroidsArray[i][j]<<'\n';
         float distance = thrust::transform_reduce(
             pointsArray[i].begin(),
             pointsArray[i].end(),
