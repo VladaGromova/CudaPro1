@@ -98,7 +98,26 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
   thrust::device_vector<float> values_out(num_centroids*num_data);
 
   unsigned long long compute_time = dtime_usec(0);
-  thrust::reduce_by_key(thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(dim, num_data)), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(dim*num_data*num_centroids), dkeygen(dim, num_data)),thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::make_permutation_iterator(d_centr.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), c_idx(dim, num_data))), thrust::make_permutation_iterator(d_data.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), d_idx(dim, num_data))))), my_dist()), thrust::make_discard_iterator(), values_out.begin());
+  thrust::reduce_by_key(
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(dim, num_data)
+    ), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(dim*num_data*num_centroids), dkeygen(dim, num_data)
+    ),
+     thrust::make_transform_iterator(thrust::make_zip_iterator(
+      thrust::make_tuple(
+        thrust::make_permutation_iterator(d_centr.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), c_idx(dim, num_data))),
+       thrust::make_permutation_iterator(d_data.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), d_idx(dim, num_data)))
+       )
+     ), my_dist()
+    )
+    , thrust::make_discard_iterator()
+    , values_out.begin()
+    );
+      cudaDeviceSynchronize();
+    std:: cout<<"Values (1)\n";
+    if (print){
+    thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
+    std::cout << std::endl;
+    }
   thrust::transform(values_out.begin(), values_out.end(), values_out.begin(), my_sqrt());
   cudaDeviceSynchronize();
  compute_time = dtime_usec(compute_time);
