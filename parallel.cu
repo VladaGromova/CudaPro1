@@ -337,6 +337,16 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   ++numIters;
 
   //optional
+cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
+             cudaMemcpyDeviceToHost);
+  std::cout << "Distances:" << std::endl;
+  for (int i = 0; i < C.realHeight; ++i) {
+    for (int j = 0; j < C.realWidth; ++j) {
+      std::cout << GetElementCPU(C, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+
 cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Centroids:" << std::endl;
