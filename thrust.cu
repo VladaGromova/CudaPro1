@@ -58,6 +58,7 @@ int main() {
 
     std::cout << "Points Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
+      std::cout<<"x_"<<i<<": ";
         for (size_t j = 0; j < pointsArray[i].size(); ++j) {
             std::cout << pointsArray[i][j] << " ";
         }
@@ -67,7 +68,7 @@ int main() {
     // Print the contents of centroidArray
     std::cout << "\nCentroids Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
-        std::cout << "Dimension " << i << ": ";
+      std::cout<<"x_"<<i<<": ";
         for (size_t j = 0; j < centroidsArray[i].size(); ++j) {
             std::cout << centroidsArray[i][j] << " ";
         }
