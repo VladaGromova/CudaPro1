@@ -327,6 +327,7 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time);
   cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
+  cudaMemset(d_changes, 0, sizeof(int));
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
   ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
   ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_B, d_numOfVectorsInClusters, k, n);
@@ -334,6 +335,23 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   std::cout<<"Changes: "<<changes<<'\n';
   ++numIters;
+
+  //optional
+cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
+             cudaMemcpyDeviceToHost);
+  std::cout << "Centroids:" << std::endl;
+  for (int i = 0; i < B.realHeight; ++i) {
+    for (int j = 0; j < B.realWidth; ++j) {
+      std::cout << GetElementCPU(B, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  std::cout<< "Assignments:\n";
+for (int i=0; i<N; ++i) {
+  std::cout<<newassignments[i]<<' ';
+}
 }
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
