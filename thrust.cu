@@ -103,10 +103,10 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
   cudaDeviceSynchronize();
  compute_time = dtime_usec(compute_time);
 
-  // if (print){
-  //   thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
-  //   std::cout << std::endl;
-  //   }
+  if (print){
+    thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
+    std::cout << std::endl;
+    }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
   return compute_time;
 }
