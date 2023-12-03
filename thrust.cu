@@ -33,13 +33,13 @@
 #define MAX_THREADS_IN_BLOCK 16
 
 struct EuclideanDistance {
-    const float* special;
+    float* special;
     int vectorSize;
 
-    EuclideanDistance(const float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
+    EuclideanDistance(float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
 
     __host__ __device__
-    float operator()(const thrust::tuple<const float*, const float*>& vec) const {
+    float operator()(const thrust::tuple<float*,float*>& vec) const {
         float distance = 0.0f;
         for (int i = 0; i < vectorSize; ++i) {
             float diff = thrust::get<1>(vec)[i] - special[i];
