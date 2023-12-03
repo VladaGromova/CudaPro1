@@ -8,16 +8,20 @@
 #include <sstream>
 #include <fstream>
 #include <string>
-#include <algorithm>
-#include <limits>
-#include <vector>
 #include <thrust/device_vector.h>
-#include <thrust/functional.h>
-#include <thrust/transform_reduce.h>
-#include <thrust/tuple.h>
-#include <thrust/iterator/zip_iterator.h>
+#include <thrust/host_vector.h>
+#include <thrust/reduce.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/transform.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/copy.h>
+#include <math.h>
+
+#include <time.h>
+#include <sys/time.h>
+#include <stdlib.h>
 
 #pragma hd_warning_disable
 //#define FILENAME "data.txt"
@@ -25,29 +29,87 @@
 #define FILENAME "myData.txt"
 //#define FILENAME "cluster_data.txt"
 
-#define BLOCK_SIZE 16
-#define MAX_ITERATIONS 100
 #define EPS 0.000001f
-//#define MAX_THREADS_IN_BLOCK 512
 
-#define MAX_THREADS_IN_BLOCK 16
+unsigned long long dtime_usec(unsigned long long prev){
+#define USECPSEC 1000000ULL
+  timeval tv1;
+  gettimeofday(&tv1,0);
+  return ((tv1.tv_sec * USECPSEC)+tv1.tv_usec) - prev;
+}
 
-struct EuclideanDistance {
-    float* special;
-    int vectorSize;
+struct dkeygen : public thrust::unary_function<int, int>
+{
+  int dim;
+  int numd;
 
-    EuclideanDistance(float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
+  dkeygen(const int _dim, const int _numd) : dim(_dim), numd(_numd) {};
 
-    __host__ __device__
-    float operator()(const thrust::tuple<float*,float*>& vec) const {
-        float distance = 0.0f;
-        for (int i = 0; i < vectorSize; ++i) {
-            float diff = thrust::get<1>(vec)[i] - special[i];
-            distance += diff * diff;
-        }
-        return sqrtf(distance);
+  __host__ __device__ int operator()(const int val) const {
+    return (val/dim);
     }
 };
+
+typedef thrust::tuple<float, float> mytuple;
+struct my_dist : public thrust::unary_function<mytuple, float>
+{
+  __host__ __device__ float operator()(const mytuple &my_tuple) const {
+    float temp = thrust::get<0>(my_tuple) - thrust::get<1>(my_tuple);
+    return temp*temp;
+  }
+};
+
+
+struct d_idx : public thrust::unary_function<int, int>
+{
+  int dim;
+  int numd;
+
+  d_idx(int _dim, int _numd) : dim(_dim), numd(_numd) {};
+
+  __host__ __device__ int operator()(const int val) const {
+    return (val % (dim*numd));
+    }
+};
+
+struct c_idx : public thrust::unary_function<int, int>
+{
+  int dim;
+  int numd;
+
+  c_idx(int _dim, int _numd) : dim(_dim), numd(_numd) {};
+
+  __host__ __device__ int operator()(const int val) const {
+    return (val % dim) + (dim * (val/(dim*numd)));
+    }
+};
+
+struct my_sqrt : public thrust::unary_function<float, float>
+{
+  __host__ __device__ float operator()(const float val) const {
+    return sqrtf(val);
+  }
+};
+
+unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int num_centroids, int dim, int num_data, int print){
+
+  thrust::device_vector<float> d_data = data;
+  thrust::device_vector<float> d_centr = centroids;
+  thrust::device_vector<float> values_out(num_centroids*num_data);
+
+  unsigned long long compute_time = dtime_usec(0);
+  thrust::reduce_by_key(thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(dim, num_data)), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(dim*num_data*num_centroids), dkeygen(dim, num_data)),thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::make_permutation_iterator(d_centr.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), c_idx(dim, num_data))), thrust::make_permutation_iterator(d_data.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), d_idx(dim, num_data))))), my_dist()), thrust::make_discard_iterator(), values_out.begin());
+  thrust::transform(values_out.begin(), values_out.end(), values_out.begin(), my_sqrt());
+  cudaDeviceSynchronize();
+ compute_time = dtime_usec(compute_time);
+
+  // if (print){
+  //   thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
+  //   std::cout << std::endl;
+  //   }
+  thrust::copy(values_out.begin(), values_out.end(), dist.begin());
+  return compute_time;
+}
 
 int main() {
   std::ifstream inputFile(FILENAME);
@@ -59,53 +121,44 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  thrust::device_vector<float> collectionOfVectors((long)n * N); // Each vector represents a dimension
-  thrust::device_vector<float> centroidsArray(n*k); // Each vector represents a dimension
+  float* data = new float[N*n];
+  float* centroids = new float[k*n];
 
   float value = 0.0f;
-  thrust::device_vector<float> specialVector(n);
   int ind =0;
   while (getline(inputFile, inputString)) {
     std::istringstream iss(inputString);
     value = 0.0f;
     while (iss >> value) {
-      collectionOfVectors.push_back(value);
-      if(ind<n){
-        specialVector.push_back(value);
+      data[ind] = value;
+      if(ind < k*n){
+        centroids[ind]  = value;
       }
       ++ind;
     }
   }
   inputFile.close();
-
-    std::cout << "Points Array:\n" << std::endl;
-    for(int j = 0; j<N; ++j){
-      for (int i = 0; i < n; ++i) {
-        std::cout << collectionOfVectors[i] << " ";
-      }
-      std::cout << std::endl;
+  std::cout<<"Data: \n";
+  for (int i = 0; i<N; ++i) {
+    for(int j=0; j< n; ++j){
+      std::cout<< data[i*n + j]<< ' ';
     }
+    std::cout<<'\n';
+  }
+    std::cout<<"\nCentroids: \n";
+  for (int i = 0; i<k; ++i) {
+    for(int j=0; j< n; ++j){
+      std::cout<< data[i*n + j]<< ' ';
+    }
+    std::cout<<'\n';
+  }
+
+  thrust::host_vector<float> h_data(data, data + (sizeof(data)/sizeof(float)));
+  thrust::host_vector<float> h_centr(centroids, centroids + (sizeof(centroids)/sizeof(float)));
+  thrust::host_vector<float> h_dist(k*N);
+  eucl_dist_thrust(h_centr, h_data, h_dist, k, n, N, 1);
+
     
-    float* d_specialVector = thrust::raw_pointer_cast(specialVector.data());
-    float* d_collectionOfVectors = thrust::raw_pointer_cast(collectionOfVectors.data());
-
-    // Calculate distances in parallel using thrust::transform
-    thrust::device_vector<float> distances(N);
-     thrust::transform(
-        thrust::make_zip_iterator(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin())),
-        thrust::make_zip_iterator(thrust::make_tuple(specialVector.end(), collectionOfVectors.end())),
-        distances.begin(),
-        EuclideanDistance(d_specialVector, n)
-    );
-
-thrust::host_vector<float> distances_host = distances;
-
-    // Print the distances
-    std::cout << "Distances: ";
-    for (int i = 0; i < N; ++i) {
-        std::cout << distances_host[i] << " ";
-    }
-    std::cout << std::endl;
   std::cout<<"\nBye!\n";
   return 0;
 }
