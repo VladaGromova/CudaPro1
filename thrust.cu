@@ -18,9 +18,9 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #pragma hd_warning_disable
-#define FILENAME "data.txt"
+//#define FILENAME "data.txt"
 //#define FILENAME "points_generated.txt"
-//#define FILENAME "myData.txt"
+#define FILENAME "myData.txt"
 //#define FILENAME "cluster_data.txt"
 
 #define BLOCK_SIZE 16
@@ -30,15 +30,12 @@
 
 #define MAX_THREADS_IN_BLOCK 16
 
-struct SquaredDistance {
-    int n; // Number of dimensions
-
-    SquaredDistance(int _n) : n(_n) {}
-
-    template <typename Tuple>
+struct SquaredDistanceFromConstant {
+    float constantValue;
+    SquaredDistanceFromConstant(float value) : constantValue(value) {}
     __host__ __device__
-    float operator()(const Tuple& tuple) const {
-        float diff = thrust::get<0>(tuple) - thrust::get<1>(tuple);
+    float operator()(const float& x) const {
+        float diff = x - constantValue;
         return diff * diff;
     }
 };
@@ -94,19 +91,21 @@ int main() {
 
    std::vector<thrust::device_vector<float> > distToCentroids(k); // Each vector represents a dimension
 
-   for (int i = 0; i < n; ++i) {
+thrust::device_vector<float> coords;
+for (int j=0; j<k; ++j){
+  std:: cout<< "\nFor "<< j<<" centroid: \n";
+  for (int i = 0; i < n; ++i) {
         float distance = thrust::transform_reduce(
-            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].begin(), centroidsArray[i].begin())),
-            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].end(), centroidsArray[i].end())),
-            SquaredDistance(n),
+            pointsArray[i].begin(),
+            pointsArray[i].end(),
+            SquaredDistanceFromConstant(centroidsArray[i][j]),
             0.0f,
             thrust::plus<float>()
         );
         distance = sqrt(distance);
         std:: cout<<distance<<' ';
-        // Use the calculated distance as needed
-        // For example, store or perform further operations with distances
     }
+}
 
   std::cout<<"\nBye!\n";
   return 0;
