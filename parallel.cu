@@ -250,21 +250,21 @@ int main() {
   InitializeMatrices(A, A_width, A_height, n, N, B, B_width, B_height, k, n, inputFile);
   InitializeMatrix(C, B_width, A_height, k, N);
   inputFile.close();
-  std::cout << "Matrix A:" << std::endl;
-  for (int i = 0; i < A.realHeight; ++i) {
-    for (int j = 0; j < A.realWidth; ++j) {
-      std::cout << GetElementCPU(A, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+  // std::cout << "Matrix A:" << std::endl;
+  // for (int i = 0; i < A.realHeight; ++i) {
+  //   for (int j = 0; j < A.realWidth; ++j) {
+  //     std::cout << GetElementCPU(A, i, j) << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 
-  std::cout << "Matrix B:" << std::endl;
-  for (int i = 0; i < B.realHeight; ++i) {
-    for (int j = 0; j < B.realWidth; ++j) {
-      std::cout << GetElementCPU(B, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+  // std::cout << "Matrix B:" << std::endl;
+  // for (int i = 0; i < B.realHeight; ++i) {
+  //   for (int j = 0; j < B.realWidth; ++j) {
+  //     std::cout << GetElementCPU(B, i, j) << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
   Matrix d_A, d_B, d_C;
   d_A.width = d_A.stride = A.width; 
   d_A.height = A.height;
