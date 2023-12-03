@@ -26,6 +26,18 @@
 
 #define MAX_THREADS_IN_BLOCK 16
 
+struct SquaredDistance {
+    int n; // Number of dimensions
+
+    SquaredDistance(int _n) : n(_n) {}
+
+    __host__ __device__
+    float operator()(const float& x, const float& y) const {
+        float diff = x - y;
+        return diff * diff;
+    }
+};
+
 int main() {
   std::ifstream inputFile(FILENAME);
   std::string inputString;
@@ -79,8 +91,8 @@ int main() {
 
    for (int i = 0; i < n; ++i) {
         float distance = thrust::transform_reduce(
-            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].begin(), centroidArray[i].begin())),
-            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].end(), centroidArray[i].end())),
+            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].begin(), centroidsArray[i].begin())),
+            thrust::make_zip_iterator(thrust::make_tuple(pointsArray[i].end(), centroidsArray[i].end())),
             SquaredDistance(n),
             0.0f,
             thrust::plus<float>()
