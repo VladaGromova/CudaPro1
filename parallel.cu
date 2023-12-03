@@ -199,13 +199,24 @@ __global__ void CompareArrays(const int* array1, const int* array2, int size, in
     }
 }
 
+// __global__ void ComputeAverage(const float* groupSums, const int* groupCounts, float* averageVectors, int n, int k) {
+//     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+//     if (tid < k) {
+//         for (int i = 0; i < DIMENSIONS; ++i) {
+//             averageVectors[tid * DIMENSIONS + i] = groupSums[tid * DIMENSIONS + i] / groupCounts[tid];
+//         }
+//     }
+// }
+
 __global__ void ComputeSum(Matrix matA, const int* groups, Matrix matB, int N, int k, int n, int* numOfVectors) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < N) {
         int groupId = groups[tid];
+        atomicAdd(&numOfVectors[groupId], 1);
+        __syncthreads();
         for (int i = 0; i < n; ++i) {
             atomicAdd(&matB.elements[i * matB.stride + groupId] , GetElement(matA, tid, i));
-            atomicAdd(&numOfVectors[groupId], 1);
         }
     }
    __syncthreads();
@@ -319,11 +330,12 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
   ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
-  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, N*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
 }
+  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
+
 std::cout<<"num of vectors in clusters: \n";
 for (int i=0; i<k; ++i) {
   std::cout<<numOfVectorsInClusters[i]<<' ';
