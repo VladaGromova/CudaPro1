@@ -330,7 +330,7 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
   ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
   ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_B, d_numOfVectorsInClusters, k, n);
-  // ! REASSIGN assignments and newassignments 
+  cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int), cudaMemcpyDeviceToDevice);
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
 }
