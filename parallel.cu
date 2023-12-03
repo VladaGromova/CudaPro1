@@ -65,7 +65,6 @@ void InitializeMatrices(Matrix& matA, int widthA, int heightA, int realWidthA, i
   matB.elements = new float[widthB * heightB];
 
   std::string inputString;
-  std::string word;
   int i = 0;
   int j = 0;
   float value = 0.0f;
