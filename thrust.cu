@@ -39,10 +39,10 @@ struct EuclideanDistance {
     EuclideanDistance(const float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
 
     __host__ __device__
-    float operator()(const thrust::tuple<const float*, const float*>& vectors) const {
+    float operator()(const float* vec) const {
         float distance = 0.0f;
         for (int i = 0; i < vectorSize; ++i) {
-            float diff = thrust::get<0>(vectors)[i] - special[i];
+            float diff = vec[i] - special[i];
             distance += diff * diff;
         }
         return sqrtf(distance);
@@ -89,18 +89,11 @@ int main() {
     float* d_specialVector = thrust::raw_pointer_cast(specialVector.data());
     float* d_collectionOfVectors = thrust::raw_pointer_cast(collectionOfVectors.data());
 
-    // Create iterators
-    // thrust::device_ptr<float> specialBegin = specialVector.data();
-    // thrust::device_ptr<float> collectionBegin = collectionOfVectors.data();
-    // thrust::counting_iterator<int> begin(0);
-
-    // Create a zip iterator to pair special vector with each vector in the collection
- thrust::zip_iterator<thrust::tuple<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator>> zippedBegin(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin()));
-    thrust::zip_iterator<thrust::tuple<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator>> zippedEnd(thrust::make_tuple(specialVector.end(), collectionOfVectors.end()));
-
     // Calculate distances in parallel using thrust::transform
     thrust::device_vector<float> distances(N);
-    thrust::transform(zippedBegin, zippedEnd, distances.begin(), EuclideanDistance(d_specialVector, n));
+     thrust::transform(collectionOfVectors.begin(), collectionOfVectors.end(), distances.begin(),
+                      EuclideanDistance(d_specialVector, n));
+
 
 thrust::host_vector<float> distances_host = distances;
 
