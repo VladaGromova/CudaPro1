@@ -63,8 +63,6 @@ int main() {
   thrust::device_vector<float> centroidsArray(n*k); // Each vector represents a dimension
 
   float value = 0.0f;
-  int index = 0;
-  int indexOfVector = 0;
   thrust::device_vector<float> specialVector(n);
   int ind =0;
   while (getline(inputFile, inputString)) {
@@ -73,9 +71,9 @@ int main() {
     while (iss >> value) {
       collectionOfVectors.push_back(value);
       if(ind<n){
-        specialVector.push_back(vlaue);
+        specialVector.push_back(value);
       }
-      +ind;
+      ++ind;
     }
   }
   inputFile.close();
@@ -92,15 +90,13 @@ int main() {
     float* d_collectionOfVectors = thrust::raw_pointer_cast(collectionOfVectors.data());
 
     // Create iterators
-    thrust::device_ptr<float> specialBegin = specialVector.data();
-    thrust::device_ptr<float> collectionBegin = collectionOfVectors.data();
-    thrust::counting_iterator<int> begin(0);
+    // thrust::device_ptr<float> specialBegin = specialVector.data();
+    // thrust::device_ptr<float> collectionBegin = collectionOfVectors.data();
+    // thrust::counting_iterator<int> begin(0);
 
     // Create a zip iterator to pair special vector with each vector in the collection
-    using IteratorTuple = thrust::tuple<const float*, const float*>;
-    using ZipIterator = thrust::zip_iterator<IteratorTuple>;
-    ZipIterator zippedBegin = thrust::make_zip_iterator(thrust::make_tuple(specialBegin, collectionBegin));
-    ZipIterator zippedEnd = zippedBegin + N;
+  thrust::zip_iterator<thrust::tuple<float*, float*> > zippedBegin(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin()));
+    thrust::zip_iterator<thrust::tuple<float*, float*> > zippedEnd(thrust::make_tuple(specialVector.end(), collectionOfVectors.end()));
 
     // Calculate distances in parallel using thrust::transform
     thrust::device_vector<float> distances(N);
