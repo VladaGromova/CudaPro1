@@ -36,8 +36,8 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  std::vector<thrust::device_vector<float>> pointsArray(n); // Each vector represents a dimension
-  std::vector<thrust::device_vector<float>> centroidsArray(n); // Each vector represents a dimension
+  std::vector<thrust::device_vector<float> > pointsArray(n); // Each vector represents a dimension
+  std::vector<thrust::device_vector<float> > centroidsArray(n); // Each vector represents a dimension
 
   float value = 0.0f;
   int index = 0;
@@ -58,9 +58,8 @@ int main() {
 
     std::cout << "Points Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
-        std::cout << "Dimension " << i << ": ";
-        for (float val : pointsArray[i]) {
-            std::cout << val << " ";
+        for (size_t j = 0; j < pointsArray[i].size(); ++j) {
+            std::cout << pointsArray[i][j] << " ";
         }
         std::cout << std::endl;
     }
@@ -69,8 +68,8 @@ int main() {
     std::cout << "\nCentroids Array:" << std::endl;
     for (int i = 0; i < n; ++i) {
         std::cout << "Dimension " << i << ": ";
-        for (float val : centroidsArray[i]) {
-            std::cout << val << " ";
+        for (size_t j = 0; j < centroidsArray[i].size(); ++j) {
+            std::cout << centroidsArray[i][j] << " ";
         }
         std::cout << std::endl;
     }
