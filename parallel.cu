@@ -11,8 +11,8 @@
 #include <algorithm>
 
 #pragma hd_warning_disable
-//#define FILENAME "points_generated.txt"
-#define FILENAME "data.txt"
+#define FILENAME "points_generated.txt"
+//#define FILENAME "data.txt"
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
 #define EPS 0.0001f
@@ -327,57 +327,62 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time);
   cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
   cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
-  MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   cudaMemset(d_changes, 0, sizeof(int));
+  MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes); 
   ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
   ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_B, d_numOfVectorsInClusters, k, n);
   cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int), cudaMemcpyDeviceToDevice);
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
-  std::cout<<"\nChanges: "<<changes<<'\n';
+  //std::cout<<"\nChanges: "<<changes<<'\n';
   ++numIters;
 
   //optional
-cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  std::cout << "Distances:" << std::endl;
-  for (int i = 0; i < C.realHeight; ++i) {
-    for (int j = 0; j < C.realWidth; ++j) {
-      std::cout << GetElementCPU(C, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+// cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
+//              cudaMemcpyDeviceToHost);
+//   std::cout << "Distances:" << std::endl;
+//   for (int i = 0; i < C.realHeight; ++i) {
+//     for (int j = 0; j < C.realWidth; ++j) {
+//       std::cout << GetElementCPU(C, i, j) << " ";
+//     }
+//     std::cout << std::endl;
+//   }
 
-cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  std::cout << "New Centroids:" << std::endl;
-  for (int i = 0; i < B.realHeight; ++i) {
-    for (int j = 0; j < B.realWidth; ++j) {
-      std::cout << GetElementCPU(B, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+// cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
+//              cudaMemcpyDeviceToHost);
+//   std::cout << "New Centroids:" << std::endl;
+//   for (int i = 0; i < B.realHeight; ++i) {
+//     for (int j = 0; j < B.realWidth; ++j) {
+//       std::cout << GetElementCPU(B, i, j) << " ";
+//     }
+//     std::cout << std::endl;
+//   }
 
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
-  std::cout<< "Assignments:\n";
-for (int i=0; i<N; ++i) {
-  std::cout<<newassignments[i]<<' ';
+//   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+//   std::cout<< "Assignments:\n";
+// for (int i=0; i<N; ++i) {
+//   std::cout<<newassignments[i]<<' ';
+// }
+//  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
+//   std::cout<< "Num of vectors in clusters:\n";
+// for (int i=0; i<k; ++i) {
+//   std::cout<<numOfVectorsInClusters[i]<<' ';
+// }
+
 }
- cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
-  std::cout<< "Num of vectors in clusters:\n";
+  //cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
+    std::cout<< "\nNum of vectors in clusters:\n";
 for (int i=0; i<k; ++i) {
   std::cout<<numOfVectorsInClusters[i]<<' ';
 }
 
-}
-  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
-  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
 std:: cout<<"Itarations: "<< numIters <<'\n';
-std::cout<< "Assignments:\n";
-for (int i=0; i<N; ++i) {
-  std::cout<<newassignments[i]<<' ';
-}
-std:: cout<<'\n';
+// std::cout<< "Assignments:\n";
+// for (int i=0; i<N; ++i) {
+//   std::cout<<newassignments[i]<<' ';
+// }
+// std:: cout<<'\n';
 
  cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
@@ -391,21 +396,21 @@ std:: cout<<'\n';
 
   cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
   std::cout<<"Time: "<<time<<'\n';
-  cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
-             cudaMemcpyDeviceToHost);
- 
 
 delete[] A.elements;
 delete[] B.elements;
 delete[] C.elements;
 delete[] assignments;
 delete[] newassignments;
+delete[] numOfVectorsInClusters;
   cudaFree(d_A.elements);
   cudaFree(d_B.elements);
   cudaFree(d_C.elements);
-  cudaFree(d_time);
   cudaFree(d_assignments);
+  cudaFree(d_newassignments);
+  cudaFree(d_numOfVectorsInClusters);
   cudaFree(d_changes);
+  cudaFree(d_time);
   std::cout<<"\nBye!\n";
   return 0;
 }
