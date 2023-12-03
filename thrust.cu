@@ -9,9 +9,13 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <limits>
+#include <vector>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/transform_reduce.h>
+#include <thrust/tuple.h>
+#include <thrust/iterator/zip_iterator.h>
 
 #pragma hd_warning_disable
 //#define FILENAME "data.txt"
@@ -31,9 +35,10 @@ struct SquaredDistance {
 
     SquaredDistance(int _n) : n(_n) {}
 
+    template <typename Tuple>
     __host__ __device__
-    float operator()(const float& x, const float& y) const {
-        float diff = x - y;
+    float operator()(const Tuple& tuple) const {
+        float diff = thrust::get<0>(tuple) - thrust::get<1>(tuple);
         return diff * diff;
     }
 };
