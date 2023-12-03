@@ -11,9 +11,9 @@
 #include <algorithm>
 
 #pragma hd_warning_disable
-#define FILENAME "points_generated.txt"
+//#define FILENAME "points_generated.txt"
 //#define FILENAME "data.txt"
-//#define FILENAME "cluster_data.txt"
+#define FILENAME "cluster_data.txt"
 
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
