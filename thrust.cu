@@ -16,6 +16,8 @@
 #include <thrust/transform_reduce.h>
 #include <thrust/tuple.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/transform.h>
 
 #pragma hd_warning_disable
 //#define FILENAME "data.txt"
@@ -30,13 +32,20 @@
 
 #define MAX_THREADS_IN_BLOCK 16
 
-struct SquaredDistanceFromConstant {
-    float constantValue;
-    SquaredDistanceFromConstant(float value) : constantValue(value) {}
+struct EuclideanDistance {
+    const float* special;
+    int vectorSize;
+
+    EuclideanDistance(const float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
+
     __host__ __device__
-    float operator()(const float& x) const {
-        float diff = x - constantValue;
-        return diff * diff;
+    float operator()(const thrust::tuple<const float*, const float*>& vectors) const {
+        float distance = 0.0f;
+        for (int i = 0; i < vectorSize; ++i) {
+            float diff = thrust::get<0>(vectors)[i] - special[i];
+            distance += diff * diff;
+        }
+        return sqrtf(distance);
     }
 };
 
@@ -44,76 +53,67 @@ int main() {
   std::ifstream inputFile(FILENAME);
   std::string inputString;
   getline(inputFile, inputString);
-  int N = atoi(inputString.c_str()); // real A height, real C height
+  long N = atoi(inputString.c_str()); // real A height, real C height
   getline(inputFile, inputString);
   int n = atoi(inputString.c_str()); // real A width, real B height
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  std::vector<thrust::device_vector<float> > pointsArray(n); // Each vector represents a dimension
-  std::vector<thrust::device_vector<float> > centroidsArray(n); // Each vector represents a dimension
+  thrust::device_vector<float> collectionOfVectors((long)n * N); // Each vector represents a dimension
+  thrust::device_vector<float> centroidsArray(n*k); // Each vector represents a dimension
 
   float value = 0.0f;
   int index = 0;
   int indexOfVector = 0;
+  thrust::device_vector<float> specialVector(n);
+  int ind =0;
   while (getline(inputFile, inputString)) {
     std::istringstream iss(inputString);
     value = 0.0f;
-    index = 0;
     while (iss >> value) {
-      pointsArray[index].push_back(value);
-      if(indexOfVector < k){
-        centroidsArray[index].push_back(value);
+      collectionOfVectors.push_back(value);
+      if(ind<n){
+        specialVector.push_back(vlaue);
       }
-      ++index;
+      +ind;
     }
-    ++indexOfVector;
   }
-
   inputFile.close();
-    std::cout << "Points Array:" << std::endl;
-    for (int i = 0; i < n; ++i) {
-      std::cout<<"x_"<<i<<": ";
-        for (size_t j = 0; j < pointsArray[i].size(); ++j) {
-            std::cout << pointsArray[i][j] << " ";
-        }
-        std::cout << std::endl;
+
+    std::cout << "Points Array:\n" << std::endl;
+    for(int j = 0; j<N; ++j){
+      for (int i = 0; i < n; ++i) {
+        std::cout << collectionOfVectors[i] << " ";
+      }
+      std::cout << std::endl;
     }
+    
+    float* d_specialVector = thrust::raw_pointer_cast(specialVector.data());
+    float* d_collectionOfVectors = thrust::raw_pointer_cast(collectionOfVectors.data());
 
-    std::cout << "\nCentroids Array:" << std::endl;
-    for (int i = 0; i < n; ++i) {
-      std::cout<<"x_"<<i<<": ";
-        for (size_t j = 0; j < centroidsArray[i].size(); ++j) {
-            std::cout << centroidsArray[i][j] << " ";
-        }
-        std::cout << std::endl;
+    // Create iterators
+    thrust::device_ptr<float> specialBegin = specialVector.data();
+    thrust::device_ptr<float> collectionBegin = collectionOfVectors.data();
+    thrust::counting_iterator<int> begin(0);
+
+    // Create a zip iterator to pair special vector with each vector in the collection
+    using IteratorTuple = thrust::tuple<const float*, const float*>;
+    using ZipIterator = thrust::zip_iterator<IteratorTuple>;
+    ZipIterator zippedBegin = thrust::make_zip_iterator(thrust::make_tuple(specialBegin, collectionBegin));
+    ZipIterator zippedEnd = zippedBegin + N;
+
+    // Calculate distances in parallel using thrust::transform
+    thrust::device_vector<float> distances(N);
+    thrust::transform(zippedBegin, zippedEnd, distances.begin(), EuclideanDistance(d_specialVector, n));
+
+thrust::host_vector<float> distances_host = distances;
+
+    // Print the distances
+    std::cout << "Distances: ";
+    for (int i = 0; i < N; ++i) {
+        std::cout << distances_host[i] << " ";
     }
-
-   std::vector<thrust::device_vector<float> > distToCentroids(k); // Each vector represents a dimension
-
-thrust::device_vector<float> coords;
-
-
-for (int j=0; j<k; ++j){
-  std:: cout<< "\nFor "<< j<<" centroid: \n";
-  for (int i = 0; i < n; ++i) {
-    std::cout<<"coords??\n";
-    for (size_t iii = 0; iii < pointsArray[i].size(); ++iii) {
-            std::cout << pointsArray[i][iii] << " ";
-        }
-        std:: cout<<'\nConstnt '<<centroidsArray[i][j]<<'\n';
-        float distance = thrust::transform_reduce(
-            pointsArray[i].begin(),
-            pointsArray[i].end(),
-            SquaredDistanceFromConstant(centroidsArray[i][j]),
-            0.0f,
-            thrust::plus<float>()
-        );
-        distance = sqrt(distance);
-        std:: cout<<distance<<' ';
-    }
-}
-
+    std::cout << std::endl;
   std::cout<<"\nBye!\n";
   return 0;
 }
