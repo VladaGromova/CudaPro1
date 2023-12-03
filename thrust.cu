@@ -95,8 +95,8 @@ int main() {
     // thrust::counting_iterator<int> begin(0);
 
     // Create a zip iterator to pair special vector with each vector in the collection
-  thrust::zip_iterator<thrust::tuple<float*, float*> > zippedBegin(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin()));
-    thrust::zip_iterator<thrust::tuple<float*, float*> > zippedEnd(thrust::make_tuple(specialVector.end(), collectionOfVectors.end()));
+ thrust::zip_iterator<thrust::tuple<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator>> zippedBegin(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin()));
+    thrust::zip_iterator<thrust::tuple<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator>> zippedEnd(thrust::make_tuple(specialVector.end(), collectionOfVectors.end()));
 
     // Calculate distances in parallel using thrust::transform
     thrust::device_vector<float> distances(N);
