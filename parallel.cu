@@ -336,7 +336,7 @@ while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
 }
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
-
+std:: cout<<"Itarations: "<< numIters <<'\n';
 std::cout<< "Assignments:\n";
 for (int i=0; i<N; ++i) {
   std::cout<<newassignments[i]<<' ';
