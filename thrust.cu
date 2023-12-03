@@ -39,10 +39,10 @@ struct EuclideanDistance {
     EuclideanDistance(const float* _special, int _vectorSize) : special(_special), vectorSize(_vectorSize) {}
 
     __host__ __device__
-    float operator()(const float* vec) const {
+    float operator()(const thrust::tuple<const float*, const float*>& vec) const {
         float distance = 0.0f;
         for (int i = 0; i < vectorSize; ++i) {
-            float diff = vec[i] - special[i];
+            float diff = thrust::get<1>(vec)[i] - special[i];
             distance += diff * diff;
         }
         return sqrtf(distance);
@@ -91,9 +91,12 @@ int main() {
 
     // Calculate distances in parallel using thrust::transform
     thrust::device_vector<float> distances(N);
-     thrust::transform(collectionOfVectors.begin(), collectionOfVectors.end(), distances.begin(),
-                      EuclideanDistance(d_specialVector, n));
-
+     thrust::transform(
+        thrust::make_zip_iterator(thrust::make_tuple(specialVector.begin(), collectionOfVectors.begin())),
+        thrust::make_zip_iterator(thrust::make_tuple(specialVector.end(), collectionOfVectors.end())),
+        distances.begin(),
+        EuclideanDistance(d_specialVector, VECTOR_SIZE)
+    );
 
 thrust::host_vector<float> distances_host = distances;
 
