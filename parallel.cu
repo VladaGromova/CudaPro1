@@ -199,15 +199,14 @@ __global__ void CompareArrays(const int* array1, const int* array2, int size, in
     }
 }
 
-// __global__ void ComputeAverage(const float* groupSums, const int* groupCounts, float* averageVectors, int n, int k) {
-//     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-//     if (tid < k) {
-//         for (int i = 0; i < DIMENSIONS; ++i) {
-//             averageVectors[tid * DIMENSIONS + i] = groupSums[tid * DIMENSIONS + i] / groupCounts[tid];
-//         }
-//     }
-// }
+__global__ void ComputeAverage(Matrix B, const int* numOfVectors, int k, int n) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < k) {
+        for (int i = 0; i < n; ++i) {
+          SetElement(B, i, tid, (float)GetElement(B, i, tid)/(float)numOfVectors[tid]);
+        }
+    }
+}
 
 __global__ void ComputeSum(Matrix matA, const int* groups, Matrix matB, int N, int k, int n, int* numOfVectors) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -330,6 +329,8 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
   CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_newassignments, d_assignments, N, d_changes);
   ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
+  ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_B, d_numOfVectorsInClusters, k, n);
+  // ! REASSIGN assignments and newassignments 
   cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
   ++numIters;
 }
