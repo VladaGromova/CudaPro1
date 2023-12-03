@@ -323,7 +323,7 @@ cudaMemset(d_changes, 0, sizeof(int));
 int gridSize = C.realHeight/MAX_THREADS_IN_BLOCK + 1;
 std::cout<<"gridSize: "<<gridSize<<'\n';
 
-while(numIters < 1 && (float)changes/(float)N > EPS){
+while(numIters < MAX_ITERATIONS && (float)changes/(float)N > EPS){
   CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time);
   cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
   MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
@@ -337,12 +337,7 @@ while(numIters < 1 && (float)changes/(float)N > EPS){
   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
   cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
 
-std::cout<<"num of vectors in clusters: \n";
-for (int i=0; i<k; ++i) {
-  std::cout<<numOfVectorsInClusters[i]<<' ';
-}
-std::cout << "\nNumber of different elements: " << changes << std::endl;
-std::cout<< "Min in each row:\n";
+std::cout<< "Assignments:\n";
 for (int i=0; i<N; ++i) {
   std::cout<<newassignments[i]<<' ';
 }
@@ -350,7 +345,7 @@ std:: cout<<'\n';
 
  cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
-  std::cout << "Matrix B:" << std::endl;
+  std::cout << "Centroids:" << std::endl;
   for (int i = 0; i < B.realHeight; ++i) {
     for (int j = 0; j < B.realWidth; ++j) {
       std::cout << GetElementCPU(B, i, j) << " ";
@@ -362,13 +357,6 @@ std:: cout<<'\n';
   std::cout<<"Time: "<<time<<'\n';
   cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
              cudaMemcpyDeviceToHost);
-  std::cout << "Matrix C:" << std::endl;
-  for (int i = 0; i < C.realHeight; ++i) {
-    for (int j = 0; j < C.realWidth; ++j) {
-      std::cout << GetElementCPU(C, i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
  
 
 delete[] A.elements;
