@@ -145,17 +145,21 @@ std:: cout<<"Distances :\n";
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
   // min dist
     thrust::device_vector<float> mins(N);
+    thrust::device_vector<int> minsKeys(N);
   thrust::reduce_by_key(
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(N*k), minkeygen(N)),// keys.last
     values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane.
-    thrust::make_discard_iterator(), // keys output
+    minsKeys.begin(), // keys output
     mins.begin(), // values output
     thrust::equal_to<int>(),
     thrust::minimum<float>()
     );
-std:: cout<<"\nMins:\n";
-thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ","));
+    std:: cout<<"\nMins keys:\n";
+  thrust::copy_n(minsKeys.begin(),minsKeys.end(),std::ostream_iterator<int>(std::cout, ", "));
+  std::cout << std::endl;
+  std:: cout<<"\nMins:\n";
+  thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
   std::cout << std::endl;
 
   return compute_time;
