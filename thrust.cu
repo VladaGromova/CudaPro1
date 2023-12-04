@@ -121,6 +121,13 @@ struct linear_index_to_row_index : public thrust::unary_function<T,T>
   }
 };
 
+struct MinWithIndex {
+    __host__ __device__
+    thrust::pair<float, int> operator()(const thrust::pair<float, int>& a, const thrust::pair<float, int>& b) const {
+        return (a.first < b.first) ? a : b;
+    }
+};
+
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
   thrust::device_vector<float> d_data = data;
@@ -188,24 +195,35 @@ std:: cout<<"Distances :\n";
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
 
 
-thrust::device_vector<float> mins(N);
-  thrust::device_vector<int> minkeys(N);
-  
-  // compute row sums by summing values with equal row indices
-  thrust::reduce_by_key
-    (thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)),
-     thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)) + (k*N),
-     values_out.begin(),
-     minkeys.begin(),
-     mins.begin(),
-     thrust::equal_to<int>(),
-     //thrust::plus<int>()
-     thrust::minimum<float>()
-     );
+// thrust::device_vector<float> mins(N);
+//   thrust::reduce_by_key
+//     (thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)),
+//      thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)) + (k*N),
+//      values_out.begin(),
+//      thrust::make_discard_iterator(),
+//      mins.begin(),
+//      thrust::equal_to<int>(),
+//      thrust::minimum<float>()
+//      );
+
+int numColumns = k; // Number of columns
+    thrust::device_vector<float> mins(N);
+    thrust::device_vector<int> min_positions(N);
+
+    // Perform reduction to find minimum value and its position for each row
+    thrust::reduce_by_key(
+        thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index(numColumns)),
+        thrust::make_transform_iterator(thrust::counting_iterator<int>(k*N), linear_index_to_row_index(numColumns)),
+        thrust::make_zip_iterator(thrust::make_tuple(values_out.begin(), thrust::counting_iterator<int>(0))),
+        thrust::make_discard_iterator(), // Discard keys output
+        thrust::make_zip_iterator(thrust::make_tuple(mins.begin(), min_positions.begin())),
+        thrust::equal_to<int>(),
+        MinWithIndex()
+    );
 
 
- std:: cout<<"\nMin keys:\n";
-   thrust::copy_n(minkeys.begin(),minkeys.end(),std::ostream_iterator<int>(std::cout, ", "));
+ std:: cout<<"\nMin positions:\n";
+   thrust::copy_n(min_positions.begin(),min_positions.end(),std::ostream_iterator<int>(std::cout, ", "));
    std::cout << std::endl;
 
 
