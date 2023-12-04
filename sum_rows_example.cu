@@ -46,7 +46,9 @@ int main(void)
      row_indices.begin(),
      row_sums.begin(),
      thrust::equal_to<int>(),
-     thrust::plus<int>());
+     //thrust::plus<int>()
+     thrust::minimum<int>()
+     );
 
   // print data 
   for(int i = 0; i < R; i++)
