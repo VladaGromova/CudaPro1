@@ -134,8 +134,8 @@ std:: cout<<"Distances :\n";
   // min dist
     thrust::device_vector<float> mins(N);
   thrust::reduce_by_key(
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(0),  _1/K), // keys.first
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(N*k),_1/K), // keys.last
+    thrust::make_counting_iterator<int>(0), // keys.first
+    thrust::make_counting_iterator<int>(N*k), // keys.last
     values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane.
     thrust::make_discard_iterator(), // keys output
     mins.begin(), // values output
