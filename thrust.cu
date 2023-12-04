@@ -98,36 +98,17 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
   thrust::device_vector<float> values_out(k*N);
 
   unsigned long long compute_time = dtime_usec(0);
-auto result_tuple = thrust::make_tuple(
-        thrust::make_permutation_iterator(
-            d_centr.begin(),
-            thrust::make_transform_iterator(
-                thrust::make_counting_iterator<int>(0), c_idx(n, N)
-            )
-        ),
-        thrust::make_permutation_iterator(
-            d_data.begin(),
-            thrust::make_transform_iterator(
-                thrust::make_counting_iterator<int>(0), d_idx(n, N)
-            )
-        )
-    );
-
-    // Wypisywanie wynikowej tupli
-    for (size_t i = 0; i < d_data.size(); ++i) {
-        std::cout << "(" << thrust::get<0>(result_tuple)[i] << ", " << thrust::get<1>(result_tuple)[i] << ") ";
-    }
-    
-
+  
   thrust::reduce_by_key(
+    // keys: 0...0 1...1 ... k*n*N
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(n, N)), // begining of input key range
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(n*N*k), dkeygen(n, N)), // end of input key range
-    thrust::make_transform_iterator(thrust::make_zip_iterator(
+    thrust::make_transform_iterator(thrust::make_zip_iterator( // begining of values range - tu chcemy miec odleglosci
       thrust::make_tuple(
         thrust::make_permutation_iterator(
           d_centr.begin(), 
           thrust::make_transform_iterator(
-              thrust::make_counting_iterator<int>(0), c_idx(n, N)
+              thrust::make_counting_iterator<int>(0), c_idx(n, k)
           )
         ),
         thrust::make_permutation_iterator(
@@ -139,14 +120,8 @@ auto result_tuple = thrust::make_tuple(
       )
      ), my_dist()),
     thrust::make_discard_iterator(), // keys output (nie potrzebujemy tego)
-    values_out.begin()    // values outpu - wynik
+    values_out.begin()    // values output - wynik
     );
-      cudaDeviceSynchronize();
-    std:: cout<<"Values (1)\n";
-    if (print){
-    thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
-    std::cout << std::endl;
-    }
   thrust::transform(values_out.begin(), values_out.end(), values_out.begin(), my_sqrt());
   cudaDeviceSynchronize();
  compute_time = dtime_usec(compute_time);
