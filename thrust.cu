@@ -212,8 +212,8 @@ int numColumns = k; // Number of columns
 
     // Perform reduction to find minimum value and its position for each row
     thrust::reduce_by_key(
-        thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index(numColumns)),
-        thrust::make_transform_iterator(thrust::counting_iterator<int>(k*N), linear_index_to_row_index(numColumns)),
+        thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(numColumns)),
+        thrust::make_transform_iterator(thrust::counting_iterator<int>(k*N), linear_index_to_row_index<int>(numColumns)),
         thrust::make_zip_iterator(thrust::make_tuple(values_out.begin(), thrust::counting_iterator<int>(0))),
         thrust::make_discard_iterator(), // Discard keys output
         thrust::make_zip_iterator(thrust::make_tuple(mins.begin(), min_positions.begin())),
