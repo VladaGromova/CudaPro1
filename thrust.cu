@@ -146,31 +146,31 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  float data[] = {
-    0.0, 1.0, 0.0,
-2.0, 2.0, 2.0,
-1.0, 2.0, 3.0,
-5.0, 4.0, 3.0
-  };
-  float centroids[] = {
-    0.0, 1.0, 0.0,
-2.0, 2.0, 2.0};
-  // float* data = new float[N*n];
-  // float* centroids = new float[k*n];
+//   float data[] = {
+//     0.0, 1.0, 0.0,
+// 2.0, 2.0, 2.0,
+// 1.0, 2.0, 3.0,
+// 5.0, 4.0, 3.0
+//   };
+//   float centroids[] = {
+//     0.0, 1.0, 0.0,
+// 2.0, 2.0, 2.0};
+  float* data = new float[N*n];
+  float* centroids = new float[k*n];
 
-  // float value = 0.0f;
-  // int ind = 0;
-  // while (getline(inputFile, inputString)) {
-  //   std::istringstream iss(inputString);
-  //   value = 0.0f;
-  //   while (iss >> value) {
-  //     data[ind] = value;
-  //     if(ind < k*n){
-  //       centroids[ind]  = value;
-  //     }
-  //     ++ind;
-  //   }
-  // }
+  float value = 0.0f;
+  int ind = 0;
+  while (getline(inputFile, inputString)) {
+    std::istringstream iss(inputString);
+    value = 0.0f;
+    while (iss >> value) {
+      data[ind] = value;
+      if(ind < k*n){
+        centroids[ind]  = value;
+      }
+      ++ind;
+    }
+  }
   inputFile.close();
   std::cout<<"Data: \n";
   for (int i = 0; i<N; ++i) {
@@ -186,9 +186,11 @@ int main() {
     }
     std::cout<<'\n';
   }
-
-  thrust::host_vector<float> h_data(data, data + (sizeof(data)/sizeof(float)));
-  thrust::host_vector<float> h_centr(centroids, centroids + (sizeof(centroids)/sizeof(float)));
+  
+  thrust::host_vector<float> h_data(data, data + N*n);
+  thrust::host_vector<float> h_centr(centroids, centroids + k*n);
+  //thrust::host_vector<float> h_data(data, data + (sizeof(data)/sizeof(float)));
+  //thrust::host_vector<float> h_centr(centroids, centroids + (sizeof(centroids)/sizeof(float)));
   thrust::host_vector<float> h_dist(k*N);
   eucl_dist_thrust(h_centr, h_data, h_dist, k, n, N, 1);
 
