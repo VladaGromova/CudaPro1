@@ -144,8 +144,8 @@ std:: cout<<"Distances :\n";
     }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
   // min dist
-    thrust::device_vector<float> mins(N);
-    thrust::device_vector<int> minsKeys(N);
+    thrust::device_vector<float> mins(N*k);
+    thrust::device_vector<int> minsKeys(N*k);
   thrust::reduce_by_key(
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(N*k), minkeygen(N)),// keys.last
