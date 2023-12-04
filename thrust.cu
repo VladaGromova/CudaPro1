@@ -96,8 +96,6 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
   thrust::device_vector<float> d_data = data;
   thrust::device_vector<float> d_centr = centroids;
   thrust::device_vector<float> values_out(k*N);
-std:: cout<<"Data:\n";
-
 
   unsigned long long compute_time = dtime_usec(0);
   
@@ -127,12 +125,27 @@ std:: cout<<"Data:\n";
   thrust::transform(values_out.begin(), values_out.end(), values_out.begin(), my_sqrt());
   cudaDeviceSynchronize();
  compute_time = dtime_usec(compute_time);
-
+std:: cout<<"Distances :\n";
   if (print){
     thrust::copy(values_out.begin(), values_out.end(), std::ostream_iterator<float>(std::cout, ", "));
     std::cout << std::endl;
     }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
+  // min dist
+    thrust::device_vector<float> mins(N);
+  thrust::reduce_by_key(
+    thrust::make_transform_iterator(thrust::counting_iterator<int>(0),  _1/K), // keys.first
+    thrust::make_transform_iterator(thrust::counting_iterator<int>(N*k),_1/K), // keys.last
+    values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane.
+    thrust::make_discard_iterator(), // keys output
+    mins.begin(), // values output
+    thrust::equal_to<float>(),
+    thrust::minimum<float>()
+    );
+std:: cout<<"\nMins:\n";
+thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ","));
+  std::cout << std::endl;
+
   return compute_time;
 }
 
@@ -146,15 +159,6 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-//   float data[] = {
-//     0.0, 1.0, 0.0,
-// 2.0, 2.0, 2.0,
-// 1.0, 2.0, 3.0,
-// 5.0, 4.0, 3.0
-//   };
-//   float centroids[] = {
-//     0.0, 1.0, 0.0,
-// 2.0, 2.0, 2.0};
   float* data = new float[N*n];
   float* centroids = new float[k*n];
 
@@ -189,11 +193,8 @@ int main() {
   
   thrust::host_vector<float> h_data(data, data + N*n);
   thrust::host_vector<float> h_centr(centroids, centroids + k*n);
-  //thrust::host_vector<float> h_data(data, data + (sizeof(data)/sizeof(float)));
-  //thrust::host_vector<float> h_centr(centroids, centroids + (sizeof(centroids)/sizeof(float)));
   thrust::host_vector<float> h_dist(k*N);
   eucl_dist_thrust(h_centr, h_data, h_dist, k, n, N, 1);
-
     
   std::cout<<"\nBye!\n";
   return 0;
