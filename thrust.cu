@@ -50,6 +50,18 @@ struct dkeygen : public thrust::unary_function<int, int>
     }
 };
 
+struct minkeygen : public thrust::unary_function<int, int>
+{
+  int stride;
+
+  minkeygen(const int _stride) : stride(_stride) {};
+
+  __host__ __device__ int operator()(const int val) const {
+    return (val % stride);
+    }
+};
+
+
 typedef thrust::tuple<float, float> mytuple;
 struct my_dist : public thrust::unary_function<mytuple, float>
 {
@@ -134,12 +146,12 @@ std:: cout<<"Distances :\n";
   // min dist
     thrust::device_vector<float> mins(N);
   thrust::reduce_by_key(
-    thrust::make_counting_iterator<int>(0), // keys.first
-    thrust::make_counting_iterator<int>(N*k), // keys.last
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(N*k), minkeygen(N)),// keys.last
     values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane.
     thrust::make_discard_iterator(), // keys output
     mins.begin(), // values output
-    thrust::equal_to<float>(),
+    thrust::equal_to<int>(),
     thrust::minimum<float>()
     );
 std:: cout<<"\nMins:\n";
