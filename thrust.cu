@@ -188,7 +188,7 @@ std:: cout<<"Distances :\n";
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
 
 
-thrust::device_vector<int> mins(N);
+thrust::device_vector<float> mins(N);
   thrust::device_vector<int> minkeys(N);
   
   // compute row sums by summing values with equal row indices
