@@ -203,6 +203,12 @@ thrust::device_vector<float> mins(N);
      thrust::minimum<float>()
      );
 
+
+ std:: cout<<"\nMin keys:\n";
+   thrust::copy_n(minkeys.begin(),minkeys.end(),std::ostream_iterator<int>(std::cout, ", "));
+   std::cout << std::endl;
+
+
  std:: cout<<"\nMins:\n";
    thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
    std::cout << std::endl;
