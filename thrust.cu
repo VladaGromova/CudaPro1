@@ -91,26 +91,55 @@ struct my_sqrt : public thrust::unary_function<float, float>
   }
 };
 
-unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int num_centroids, int dim, int num_data, int print){
+unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
   thrust::device_vector<float> d_data = data;
   thrust::device_vector<float> d_centr = centroids;
-  thrust::device_vector<float> values_out(num_centroids*num_data);
+  thrust::device_vector<float> values_out(k*N);
 
   unsigned long long compute_time = dtime_usec(0);
+auto result_tuple = thrust::make_tuple(
+        thrust::make_permutation_iterator(
+            d_centr.begin(),
+            thrust::make_transform_iterator(
+                thrust::make_counting_iterator<int>(0), c_idx(n, N)
+            )
+        ),
+        thrust::make_permutation_iterator(
+            d_data.begin(),
+            thrust::make_transform_iterator(
+                thrust::make_counting_iterator<int>(0), d_idx(n, N)
+            )
+        )
+    );
+
+    // Wypisywanie wynikowej tupli
+    for (size_t i = 0; i < d_data.size(); ++i) {
+        std::cout << "(" << thrust::get<0>(result_tuple)[i] << ", " << thrust::get<1>(result_tuple)[i] << ") ";
+    }
+    
+
   thrust::reduce_by_key(
-    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(dim, num_data)
-    ), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(dim*num_data*num_centroids), dkeygen(dim, num_data)
-    ),
-     thrust::make_transform_iterator(thrust::make_zip_iterator(
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(n, N)), // begining of input key range
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(n*N*k), dkeygen(n, N)), // end of input key range
+    thrust::make_transform_iterator(thrust::make_zip_iterator(
       thrust::make_tuple(
-        thrust::make_permutation_iterator(d_centr.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), c_idx(dim, num_data))),
-       thrust::make_permutation_iterator(d_data.begin(), thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), d_idx(dim, num_data)))
-       )
-     ), my_dist()
-    )
-    , thrust::make_discard_iterator()
-    , values_out.begin()
+        thrust::make_permutation_iterator(
+          d_centr.begin(), 
+          thrust::make_transform_iterator(
+              thrust::make_counting_iterator<int>(0), c_idx(n, N)
+          )
+        ),
+        thrust::make_permutation_iterator(
+          d_data.begin(), 
+          thrust::make_transform_iterator(
+            thrust::make_counting_iterator<int>(0), d_idx(n, N)
+          )
+        )
+      )
+     ), my_dist()),
+    thrust::make_discard_iterator(), // keys output (nie potrzebujemy tego)
+    values_out.begin()    // values outpu - wynik
     );
       cudaDeviceSynchronize();
     std:: cout<<"Values (1)\n";
@@ -144,7 +173,7 @@ int main() {
   float* centroids = new float[k*n];
 
   float value = 0.0f;
-  int ind =0;
+  int ind = 0;
   while (getline(inputFile, inputString)) {
     std::istringstream iss(inputString);
     value = 0.0f;
