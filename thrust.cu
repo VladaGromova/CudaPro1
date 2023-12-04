@@ -50,6 +50,7 @@ struct dkeygen : public thrust::unary_function<int, int>
     }
 };
 
+
 struct minkeygen : public thrust::unary_function<int, int>
 {
   int stride;
@@ -84,6 +85,8 @@ struct d_idx : public thrust::unary_function<int, int>
     }
 };
 
+
+
 struct c_idx : public thrust::unary_function<int, int>
 {
   int dim;
@@ -111,7 +114,31 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
 
   unsigned long long compute_time = dtime_usec(0);
   
-  thrust::reduce_by_key(
+  // thrust::reduce_by_key(
+  //   // keys: 0...0 1...1 ... k*n*N
+  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(n, N)), // begining of input key range
+  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(n*N*k), dkeygen(n, N)), // end of input key range
+  //   thrust::make_transform_iterator(thrust::make_zip_iterator( // begining of values range - tu chcemy miec odleglosci
+  //     thrust::make_tuple(
+  //       thrust::make_permutation_iterator(
+  //         d_centr.begin(), 
+  //         thrust::make_transform_iterator(
+  //             thrust::make_counting_iterator<int>(0), c_idx(n, N)
+  //         )
+  //       ),
+  //       thrust::make_permutation_iterator(
+  //         d_data.begin(), 
+  //         thrust::make_transform_iterator(
+  //           thrust::make_counting_iterator<int>(0), d_idx(n, N)
+  //         )
+  //       )
+  //     )
+  //    ), my_dist()),
+  //   thrust::make_discard_iterator(), // keys output (nie potrzebujemy tego)
+  //   values_out.begin()    // values output - wynik
+  //   );
+
+thrust::reduce_by_key(
     // keys: 0...0 1...1 ... k*n*N
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(n, N)), // begining of input key range
     thrust::make_transform_iterator(thrust::make_counting_iterator<int>(n*N*k), dkeygen(n, N)), // end of input key range
@@ -120,13 +147,13 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
         thrust::make_permutation_iterator(
           d_centr.begin(), 
           thrust::make_transform_iterator(
-              thrust::make_counting_iterator<int>(0), c_idx(n, N)
+              thrust::make_counting_iterator<int>(0), d_idx(n, k)
           )
         ),
         thrust::make_permutation_iterator(
           d_data.begin(), 
           thrust::make_transform_iterator(
-            thrust::make_counting_iterator<int>(0), d_idx(n, N)
+            thrust::make_counting_iterator<int>(0), c_idx(n, k)
           )
         )
       )
@@ -134,6 +161,7 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
     thrust::make_discard_iterator(), // keys output (nie potrzebujemy tego)
     values_out.begin()    // values output - wynik
     );
+
   thrust::transform(values_out.begin(), values_out.end(), values_out.begin(), my_sqrt());
   cudaDeviceSynchronize();
  compute_time = dtime_usec(compute_time);
@@ -144,23 +172,23 @@ std:: cout<<"Distances :\n";
     }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
   // min dist
-    thrust::device_vector<float> mins(N);
-    thrust::device_vector<int> minsKeys(N);
-  thrust::reduce_by_key(
-    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
-    thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)) + N*k,// keys.last
-    values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane // HERE IS THE PROBLEM 
-    minsKeys.begin(), // keys output
-    mins.begin(), // values output
-    thrust::equal_to<int>(),
-    thrust::minimum<float>()
-    );
-    std:: cout<<"\nMins keys:\n";
-  thrust::copy_n(minsKeys.begin(),minsKeys.end(),std::ostream_iterator<int>(std::cout, ", "));
-  std::cout << std::endl;
-  std:: cout<<"\nMins:\n";
-  thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
-  std::cout << std::endl;
+  //   thrust::device_vector<float> mins(N);
+  //   thrust::device_vector<int> minsKeys(N);
+  // thrust::reduce_by_key(
+  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
+  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)) + N*k,// keys.last
+  //   values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane // HERE IS THE PROBLEM 
+  //   minsKeys.begin(), // keys output
+  //   mins.begin(), // values output
+  //   thrust::equal_to<int>(),
+  //   thrust::minimum<float>()
+  //   );
+  //   std:: cout<<"\nMins keys:\n";
+  // thrust::copy_n(minsKeys.begin(),minsKeys.end(),std::ostream_iterator<int>(std::cout, ", "));
+  // std::cout << std::endl;
+  // std:: cout<<"\nMins:\n";
+  // thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
+  // std::cout << std::endl;
 
   return compute_time;
 }
