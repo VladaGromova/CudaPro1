@@ -73,6 +73,14 @@ struct my_dist : public thrust::unary_function<mytuple, float>
 };
 
 
+struct MinWithIndex {
+    __host__ __device__
+    thrust::tuple<float, int> operator()(const thrust::tuple<float, int>& a, const thrust::tuple<float, int>& b) const {
+        return (thrust::get<0>(a) < thrust::get<0>(b)) ? a : b;
+    }
+};
+
+
 struct d_idx : public thrust::unary_function<int, int>
 {
   int dim;
@@ -121,12 +129,6 @@ struct linear_index_to_row_index : public thrust::unary_function<T,T>
   }
 };
 
-struct MinWithIndex {
-    __host__ __device__
-    thrust::pair<float, int> operator()(const thrust::pair<float, int>& a, const thrust::pair<float, int>& b) const {
-        return (a.first < b.first) ? a : b;
-    }
-};
 
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
