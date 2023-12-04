@@ -200,7 +200,7 @@ thrust::device_vector<int> mins(N);
      mins.begin(),
      thrust::equal_to<int>(),
      //thrust::plus<int>()
-     thrust::minimum<int>()
+     thrust::minimum<float>()
      );
 
  std:: cout<<"\nMins:\n";
