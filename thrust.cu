@@ -222,7 +222,10 @@ int numColumns = k; // Number of columns
         thrust::equal_to<int>(),
         MinWithIndex()
     );
-
+    
+thrust::device_vector<float> V2(N*k);
+thrust::fill(V2.begin(), V2.end(), k);
+thrust::transform(min_positions.begin(), min_positions.end(), V2.begin(), min_positions.begin(), thrust::modulus<int>());
 
  std:: cout<<"\nMin positions:\n";
    thrust::copy_n(min_positions.begin(),min_positions.end(),std::ostream_iterator<int>(std::cout, ", "));
