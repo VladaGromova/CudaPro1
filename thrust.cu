@@ -96,6 +96,8 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
   thrust::device_vector<float> d_data = data;
   thrust::device_vector<float> d_centr = centroids;
   thrust::device_vector<float> values_out(k*N);
+std:: cout<<"Data:\n";
+
 
   unsigned long long compute_time = dtime_usec(0);
   
@@ -108,7 +110,7 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrus
         thrust::make_permutation_iterator(
           d_centr.begin(), 
           thrust::make_transform_iterator(
-              thrust::make_counting_iterator<int>(0), c_idx(n, k)
+              thrust::make_counting_iterator<int>(0), c_idx(n, N)
           )
         ),
         thrust::make_permutation_iterator(
@@ -144,22 +146,31 @@ int main() {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
-  float* data = new float[N*n];
-  float* centroids = new float[k*n];
+  float data[] = {
+    0.0, 1.0, 0.0,
+2.0, 2.0, 2.0,
+1.0, 2.0, 3.0,
+5.0, 4.0, 3.0
+  };
+  float centroids[] = {
+    0.0, 1.0, 0.0,
+2.0, 2.0, 2.0};
+  // float* data = new float[N*n];
+  // float* centroids = new float[k*n];
 
-  float value = 0.0f;
-  int ind = 0;
-  while (getline(inputFile, inputString)) {
-    std::istringstream iss(inputString);
-    value = 0.0f;
-    while (iss >> value) {
-      data[ind] = value;
-      if(ind < k*n){
-        centroids[ind]  = value;
-      }
-      ++ind;
-    }
-  }
+  // float value = 0.0f;
+  // int ind = 0;
+  // while (getline(inputFile, inputString)) {
+  //   std::istringstream iss(inputString);
+  //   value = 0.0f;
+  //   while (iss >> value) {
+  //     data[ind] = value;
+  //     if(ind < k*n){
+  //       centroids[ind]  = value;
+  //     }
+  //     ++ind;
+  //   }
+  // }
   inputFile.close();
   std::cout<<"Data: \n";
   for (int i = 0; i<N; ++i) {
