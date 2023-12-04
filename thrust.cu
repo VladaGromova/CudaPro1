@@ -106,6 +106,21 @@ struct my_sqrt : public thrust::unary_function<float, float>
   }
 };
 
+template <typename T>
+struct linear_index_to_row_index : public thrust::unary_function<T,T>
+{
+  T C; // number of columns
+  
+  __host__ __device__
+  linear_index_to_row_index(T C) : C(C) {}
+
+  __host__ __device__
+  T operator()(T i)
+  {
+    return i / C;
+  }
+};
+
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
   thrust::device_vector<float> d_data = data;
@@ -171,6 +186,28 @@ std:: cout<<"Distances :\n";
     std::cout << std::endl;
     }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
+
+
+thrust::device_vector<int> mins(N);
+  thrust::device_vector<int> minkeys(N);
+  
+  // compute row sums by summing values with equal row indices
+  thrust::reduce_by_key
+    (thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)),
+     thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)) + (k*N),
+     values_out.begin(),
+     minkeys.begin(),
+     mins.begin(),
+     thrust::equal_to<int>(),
+     //thrust::plus<int>()
+     thrust::minimum<int>()
+     );
+
+ std:: cout<<"\nMins:\n";
+   thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
+   std::cout << std::endl;
+
+
   // min dist
   //   thrust::device_vector<float> mins(N);
   //   thrust::device_vector<int> minsKeys(N);
