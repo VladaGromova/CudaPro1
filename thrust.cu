@@ -24,9 +24,9 @@
 #include <stdlib.h>
 
 #pragma hd_warning_disable
-//#define FILENAME "data.txt"
+#define FILENAME "data.txt"
 //#define FILENAME "points_generated.txt"
-#define FILENAME "myData.txt"
+//#define FILENAME "myData.txt"
 //#define FILENAME "cluster_data.txt"
 
 #define EPS 0.000001f
