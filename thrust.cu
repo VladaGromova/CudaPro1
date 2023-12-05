@@ -256,19 +256,17 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
    std::cout << std::endl;
 
    // CHAT 
-
-    thrust::device_vector<float> centroids(N * n, 0);
-
-    // Oblicz sumę wektorów dla każdego klastra
-    thrust::reduce_by_key(
-        d_clusters.begin(), 
-        d_clusters.end(),
-        thrust::make_permutation_iterator(d_data.begin(), indices.begin()),
-        thrust::make_discard_iterator(),
-        thrust::make_permutation_iterator(centroids.begin(), thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), thrust::make_discard_iterator()))),
-        thrust::equal_to<int>(),
-        sum_functor()
-    );
+    // thrust::device_vector<float> centroids(N * n, 0);
+    // // Oblicz sumę wektorów dla każdego klastra
+    // thrust::reduce_by_key(
+    //     d_clusters.begin(), // keys first
+    //     d_clusters.end(), // keys last
+    //     thrust::make_permutation_iterator(d_data.begin(), indices.begin()), // values first
+    //     thrust::make_discard_iterator(), // keys output
+    //     thrust::make_permutation_iterator(centroids.begin(), thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), thrust::make_discard_iterator()))), // values output
+    //     thrust::equal_to<int>(),
+    //     sum_functor()
+    // );
 
     // Oblicz liczbę wystąpień każdego klastra
     thrust::device_vector<int> clusterSizes(N);
@@ -280,24 +278,18 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
         thrust::equal_to<int>(),
         thrust::plus<int>()
     );
+     std:: cout<<"\nCluster sizes:\n";
+   thrust::copy_n(clusterSizes.begin(),clusterSizes.end(),std::ostream_iterator<float>(std::cout, ", "));
+   std::cout << std::endl;
 
-    // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
-    thrust::transform(
-        centroids.begin(), centroids.end(),
-        clusterSizes.begin(),
-        centroids.begin(),
-        thrust::divides<float>()
-    );
 
-    // Wyświetl nowe centroidy
-    thrust::host_vector<float> h_centroids = centroids;
-    for (int i = 0; i < N; ++i) {
-        std::cout << "Centroid " << i << ": ";
-        for (int j = 0; j < n; ++j) {
-            std::cout << h_centroids[i * n + j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    // // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
+    // thrust::transform(
+    //     centroids.begin(), centroids.end(),
+    //     clusterSizes.begin(),
+    //     centroids.begin(),
+    //     thrust::divides<float>()
+    // );
 
   // min dist
   //   thrust::device_vector<float> mins(N);
