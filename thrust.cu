@@ -1,8 +1,10 @@
 #include <cfloat>
 #include <climits>
+#include <concurrencysal.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cmath>
+#include <iterator>
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
@@ -54,11 +56,11 @@ struct dkeygen : public thrust::unary_function<int, int>
 };
 
 
-struct minkeygen : public thrust::unary_function<int, int>
+struct clusterkeygen : public thrust::unary_function<int, int>
 {
   int stride;
 
-  minkeygen(const int _stride) : stride(_stride) {};
+  clusterkeygen(const int _stride) : stride(_stride) {};
 
   __host__ __device__ int operator()(const int val) const {
     return (val % stride);
@@ -147,30 +149,6 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs, thrust::host
   thrust::device_vector<float> values_out(k*N);
 
   unsigned long long compute_time = dtime_usec(0);
-  
-  // thrust::reduce_by_key(
-  //   // keys: 0...0 1...1 ... k*n*N
-  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), dkeygen(n, N)), // begining of input key range
-  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(n*N*k), dkeygen(n, N)), // end of input key range
-  //   thrust::make_transform_iterator(thrust::make_zip_iterator( // begining of values range - tu chcemy miec odleglosci
-  //     thrust::make_tuple(
-  //       thrust::make_permutation_iterator(
-  //         d_centr.begin(), 
-  //         thrust::make_transform_iterator(
-  //             thrust::make_counting_iterator<int>(0), c_idx(n, N)
-  //         )
-  //       ),
-  //       thrust::make_permutation_iterator(
-  //         d_data.begin(), 
-  //         thrust::make_transform_iterator(
-  //           thrust::make_counting_iterator<int>(0), d_idx(n, N)
-  //         )
-  //       )
-  //     )
-  //    ), my_dist()),
-  //   thrust::make_discard_iterator(), // keys output (nie potrzebujemy tego)
-  //   values_out.begin()    // values output - wynik
-  //   );
 
 thrust::reduce_by_key(
     // keys: 0...0 1...1 ... k*n*N
@@ -206,18 +184,6 @@ std:: cout<<"Distances :\n";
     }
   thrust::copy(values_out.begin(), values_out.end(), dist.begin());
 
-
-// thrust::device_vector<float> mins(N);
-//   thrust::reduce_by_key
-//     (thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)),
-//      thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(k)) + (k*N),
-//      values_out.begin(),
-//      thrust::make_discard_iterator(),
-//      mins.begin(),
-//      thrust::equal_to<int>(),
-//      thrust::minimum<float>()
-//      );
-
 int numColumns = k; // Number of columns
     thrust::device_vector<float> mins(N);
     thrust::device_vector<int> d_clusters(N);
@@ -237,7 +203,7 @@ thrust::device_vector<float> V2(N*k);
 thrust::fill(V2.begin(), V2.end(), k);
 thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.begin(), thrust::modulus<int>());
 
- std:: cout<<"\nMin positions:\n";
+ std:: cout<<"\nClusters:\n";
    thrust::copy_n(d_clusters.begin(),d_clusters.end(),std::ostream_iterator<int>(std::cout, ", "));
    std::cout << std::endl;
 
@@ -255,21 +221,8 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
    thrust::copy_n(indices.begin(),indices.end(),std::ostream_iterator<float>(std::cout, ", "));
    std::cout << std::endl;
 
-   // CHAT 
-    // thrust::device_vector<float> centroids(N * n, 0);
-    // // Oblicz sumę wektorów dla każdego klastra
-    // thrust::reduce_by_key(
-    //     d_clusters.begin(), // keys first
-    //     d_clusters.end(), // keys last
-    //     thrust::make_permutation_iterator(d_data.begin(), indices.begin()), // values first
-    //     thrust::make_discard_iterator(), // keys output
-    //     thrust::make_permutation_iterator(centroids.begin(), thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), thrust::make_discard_iterator()))), // values output
-    //     thrust::equal_to<int>(),
-    //     sum_functor()
-    // );
-
     // Oblicz liczbę wystąpień każdego klastra
-    thrust::device_vector<int> clusterSizes(N);
+    thrust::device_vector<int> clusterSizes(k);
     thrust::reduce_by_key(
         d_clusters.begin(), d_clusters.end(),
         thrust::make_constant_iterator(1),
@@ -283,6 +236,25 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
    std::cout << std::endl;
 
 
+thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
+thrust::device_vector<float> vectorsInCluster(n);
+thrust::device_vector<int> data_starts(k);
+thrust::device_vector<int> data_ends(k);
+thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(), data_starts.begin()); 
+thrust::inclusive_scan(clusterSizes.begin(), clusterSizes.end(), data_ends.begin()); 
+std:: cout<<"\n Data starts:\n";
+thrust::copy_n(data_starts.begin(),data_starts.end(),std::ostream_iterator<int>(std::cout, ", "));
+std::cout << std::endl;
+std:: cout<<"\n Data ends:\n";
+thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std::cout, ", "));
+std::cout << std::endl;
+
+// for(int i=0; i<k; ++i){
+//   vectorsInCluster.resize(clusterSizes[i] * n);
+
+// }
+
+
     // // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
     // thrust::transform(
     //     centroids.begin(), centroids.end(),
@@ -291,24 +263,6 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
     //     thrust::divides<float>()
     // );
 
-  // min dist
-  //   thrust::device_vector<float> mins(N);
-  //   thrust::device_vector<int> minsKeys(N);
-  // thrust::reduce_by_key(
-  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)), // begining of input key range
-  //   thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0), minkeygen(N)) + N*k,// keys.last
-  //   values_out.begin(), //values_first: Iterator początkowy wartości, które mają być zredukowane // HERE IS THE PROBLEM 
-  //   minsKeys.begin(), // keys output
-  //   mins.begin(), // values output
-  //   thrust::equal_to<int>(),
-  //   thrust::minimum<float>()
-  //   );
-  //   std:: cout<<"\nMins keys:\n";
-  // thrust::copy_n(minsKeys.begin(),minsKeys.end(),std::ostream_iterator<int>(std::cout, ", "));
-  // std::cout << std::endl;
-  // std:: cout<<"\nMins:\n";
-  // thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
-  // std::cout << std::endl;
 
   return compute_time;
 }
