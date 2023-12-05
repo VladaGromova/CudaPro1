@@ -141,6 +141,23 @@ struct sum_functor {
     }
 };
 
+struct div_functor : public thrust::unary_function<int,int>
+{
+    int m;
+    div_functor(int _m) : m(_m) {};
+
+    __host__ __device__
+    int operator()(int x) const
+    {
+        return x / m;
+    }
+};
+
+struct is_true
+{
+    __host__ __device__
+    bool operator()(bool x) { return x; }
+};
 
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
@@ -249,14 +266,27 @@ std::cout << std::endl;
 std:: cout<<"\n Data ends:\n";
 thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std::cout, ", "));
 std::cout << std::endl;
+thrust::device_vector<bool> docopy(N*n);
 
-// for(int i=0; i<k; ++i){
-  int i=0;
+int i=0;
+//for(int i=0; i<k; ++i){
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
   thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
-  std:: cout<<"\n actual_indices:\n";
-thrust::copy_n(actual_indices.begin(),actual_indices.end(),std::ostream_iterator<int>(std::cout, ", "));
+
+  typedef thrust::counting_iterator<int> counter;
+    typedef thrust::transform_iterator<div_functor, counter> rowIterator;
+    rowIterator rows_begin = thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n));
+    rowIterator rows_end = rows_begin + (N*n);
+  thrust::binary_search(actual_indices.begin(), actual_indices.end(), rows_begin, rows_end, docopy.begin());
+  thrust::copy_if(thrust::make_counting_iterator<int>(0), 
+                  thrust::make_counting_iterator<int>(N*n),
+                  docopy.begin(), 
+                  vectorsInCluster.begin(), 
+                  is_true()
+  );
+  std:: cout<<"\n Actrual vectors:\n";
+thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 //}
 
