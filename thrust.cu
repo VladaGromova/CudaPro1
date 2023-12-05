@@ -17,6 +17,9 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/copy.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
 #include <math.h>
 
 #include <time.h>
@@ -239,7 +242,7 @@ thrust::transform(min_positions.begin(), min_positions.end(), V2.begin(), min_po
 
   thrust::device_vector<int> indices(N);
     thrust::sequence(indices.begin(), indices.end());
-    thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
+    thrust::sort_by_key(min_positions.begin(), d_clusters.end(), indices.begin());
 
  std:: cout<<"\nIndices:\n";
    thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));

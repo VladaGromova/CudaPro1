@@ -352,21 +352,21 @@ cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
     std::cout << std::endl;
   }
 
-// cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
-//              cudaMemcpyDeviceToHost);
-//   std::cout << "New Centroids:" << std::endl;
-//   for (int i = 0; i < B.realHeight; ++i) {
-//     for (int j = 0; j < B.realWidth; ++j) {
-//       std::cout << GetElementCPU(B, i, j) << " ";
-//     }
-//     std::cout << std::endl;
-//   }
+cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
+             cudaMemcpyDeviceToHost);
+  std::cout << "New Centroids:" << std::endl;
+  for (int i = 0; i < B.realHeight; ++i) {
+    for (int j = 0; j < B.realWidth; ++j) {
+      std::cout << GetElementCPU(B, i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
 
-//   cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
-//   std::cout<< "Assignments:\n";
-// for (int i=0; i<N; ++i) {
-//   std::cout<<newassignments[i]<<' ';
-// }
+  cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
+  std::cout<< "Assignments:\n";
+for (int i=0; i<N; ++i) {
+  std::cout<<newassignments[i]<<' ';
+}
 //  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
 //   std::cout<< "Num of vectors in clusters:\n";
 // for (int i=0; i<k; ++i) {
@@ -375,13 +375,13 @@ cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
 
 }
   //cudaMemcpy(newassignments, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost); // optional
-  cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
-    std::cout<< "\nNum of vectors in clusters:\n";
-for (int i=0; i<k; ++i) {
-  std::cout<<numOfVectorsInClusters[i]<<' ';
-}
+//   cudaMemcpy(numOfVectorsInClusters, d_numOfVectorsInClusters, k*sizeof(int), cudaMemcpyDeviceToHost); // optional
+//     std::cout<< "\nNum of vectors in clusters:\n";
+// for (int i=0; i<k; ++i) {
+//   std::cout<<numOfVectorsInClusters[i]<<' ';
+// }
 
-std:: cout<<"Itarations: "<< numIters <<'\n';
+// std:: cout<<"Itarations: "<< numIters <<'\n';
 // std::cout<< "Assignments:\n";
 // for (int i=0; i<N; ++i) {
 //   std::cout<<newassignments[i]<<' ';
