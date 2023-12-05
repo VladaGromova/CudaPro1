@@ -238,6 +238,7 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
 
 thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
 thrust::device_vector<float> vectorsInCluster(n);
+thrust:: device_vector<float> actual_indices(1);
 thrust::device_vector<int> data_starts(k);
 thrust::device_vector<int> data_ends(k);
 thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(), data_starts.begin()); 
@@ -250,9 +251,13 @@ thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std:
 std::cout << std::endl;
 
 // for(int i=0; i<k; ++i){
-//   vectorsInCluster.resize(clusterSizes[i] * n);
-
-// }
+  vectorsInCluster.resize(clusterSizes[i] * n);
+  actual_indices.resize(clusterSizes[i]);
+  thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
+  std:: cout<<"\n actual_indices:\n";
+thrust::copy_n(actual_indices.begin(),actual_indices.end(),std::ostream_iterator<int>(std::cout, ", "));
+std::cout << std::endl;
+//}
 
 
     // // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
