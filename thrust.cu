@@ -172,8 +172,8 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
   int delta = INT_MAX;
   int numIters = 0;
   thrust::device_vector<int> d_clusters(N);
-  thrust::fill(d_clusters.begin(), d_clusters.end(), 0);
   thrust::device_vector<int> old_d_clusters(N);
+  thrust::fill(d_clusters.begin(), d_clusters.end(), 0);
   thrust::device_vector<float> mins(N);
   thrust::device_vector<float> V2(N * k);
   thrust::device_vector<int> indices(N);
@@ -264,14 +264,20 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
     thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
-
+  std::cout << "\n d_clusters:\n";
+  thrust::copy_n(d_clusters.begin(), d_clusters.end(),
+                 std::ostream_iterator<int>(std::cout, ", "));
+  std::cout << std::endl;
     // Oblicz liczbę wystąpień każdego klastra
     thrust::reduce_by_key(d_clusters.begin(), d_clusters.end(),
                           thrust::make_constant_iterator(1),
                           thrust::make_discard_iterator(), clusterSizes.begin(),
                           thrust::equal_to<int>(), thrust::plus<int>());
 
-
+  std::cout << "\n d_clusters:\n";
+  thrust::copy_n(d_clusters.begin(), d_clusters.end(),
+                 std::ostream_iterator<int>(std::cout, ", "));
+  std::cout << std::endl;
     thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
     thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                            data_starts.begin());
