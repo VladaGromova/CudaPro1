@@ -281,13 +281,19 @@ int i=0;
     rowIterator rows_begin = thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n));
     rowIterator rows_end = rows_begin + (N*n);
   thrust::binary_search(actual_indices.begin(), actual_indices.end(), rows_begin, rows_end, docopy.begin());
-  thrust::copy_if(thrust::make_counting_iterator<int>(0), 
-                  thrust::make_counting_iterator<int>(N*n),
+  // thrust::copy_if(thrust::make_counting_iterator<int>(0), 
+  //                 thrust::make_counting_iterator<int>(N*n),
+  //                 docopy.begin(), 
+  //                 vectorsInCluster.begin(), 
+  //                 is_true()
+  // );
+  thrust::copy_if(d_data.begin(), 
+                  d_data.end(),
                   docopy.begin(), 
                   vectorsInCluster.begin(), 
                   is_true()
   );
-  std:: cout<<"\n Actrual vectors:\n";
+  std:: cout<<"\n Actual vectors:\n";
 thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 //}
