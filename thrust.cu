@@ -153,9 +153,10 @@ struct centr_sum_functor {
   }
 };
 
+
 struct NotEqual {
-  __host__ __device__ int operator()(const int &x, const int &y) const {
-    return x != y ? 1 : 0;
+  __host__ __device__ int operator()(thrust::tuple<int, int> t) const {
+    return thrust::get<0>(t) != thrust::get<1>(t) ? 1 : 0;
   }
 };
 
@@ -188,7 +189,7 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
-    thrust::copy(d_clusters.begin(), d_clusters.end(), old_d_clusters.begin(), )
+    thrust::copy(d_clusters.begin(), d_clusters.end(), old_d_clusters.begin());
         thrust::reduce_by_key(
             // keys: 0...0 1...1 ... k*n*N
             thrust::make_transform_iterator(
