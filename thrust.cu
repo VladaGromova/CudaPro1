@@ -161,6 +161,22 @@ struct is_true
     bool operator()(bool x) { return x; }
 };
 
+struct centr_sum_functor
+{
+  int R;
+  int C;
+  float *arr;
+
+  centr_sum_functor(int _R, int _C, mytype *_arr) : R(_R), C(_C), arr(_arr) {};
+
+  __host__ __device__
+  mytype operator()(int myC){
+    float sum = 0.0;
+      for (int i = 0; i < R; i++) sum += arr[i*C+myC];
+    return sum;
+    }
+};
+
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
   thrust::device_vector<float> d_data = data;
@@ -270,7 +286,7 @@ thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std:
 std::cout << std::endl;
 thrust::device_vector<bool> docopy(N*n);
 
-int i=0;
+int i=2;
 // for(int i=0; i<k; ++i){
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
@@ -290,6 +306,15 @@ int i=0;
   );
   std:: cout<<"\n Actual vectors:\n";
 thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
+std::cout << std::endl;
+
+ thrust::device_vector<float> fcol_sums(n);
+  thrust::sequence(fcol_sums.begin(), fcol_sums.end());  // start with column index
+  thrust::transform(fcol_sums.begin(), fcol_sums.end(), fcol_sums.begin(), centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
+  cudaDeviceSynchronize();
+
+    std:: cout<<"\n Sums:\n";
+thrust::copy_n(fcol_sums.begin(),fcol_sums.end(),std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 //}
 
