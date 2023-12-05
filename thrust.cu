@@ -271,22 +271,21 @@ std::cout << std::endl;
 thrust::device_vector<bool> docopy(N*n);
 
 int i=0;
-//for(int i=0; i<k; ++i){
+// for(int i=0; i<k; ++i){
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
   thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
 
-  typedef thrust::counting_iterator<int> counter;
-    typedef thrust::transform_iterator<div_functor, counter> rowIterator;
-    rowIterator rows_begin = thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n));
-    rowIterator rows_end = rows_begin + (N*n);
-  thrust::binary_search(actual_indices.begin(), actual_indices.end(), rows_begin, rows_end, docopy.begin());
-  // thrust::copy_if(thrust::make_counting_iterator<int>(0), 
-  //                 thrust::make_counting_iterator<int>(N*n),
-  //                 docopy.begin(), 
-  //                 vectorsInCluster.begin(), 
-  //                 is_true()
-  // );
+  //typedef thrust::counting_iterator<int> counter;
+    // typedef thrust::transform_iterator<div_functor, counter> rowIterator;
+    // rowIterator rows_begin = thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n));
+    // rowIterator rows_end = rows_begin + (N*n);
+  thrust::binary_search(actual_indices.begin(),
+                        actual_indices.end(),
+                        thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n)),
+                        thrust::make_transform_iterator(thrust::make_counting_iterator(0), div_functor(n)) + N*n, 
+                        docopy.begin()
+  );
   thrust::copy_if(d_data.begin(), 
                   d_data.end(),
                   docopy.begin(), 
