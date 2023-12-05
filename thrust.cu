@@ -314,11 +314,11 @@ std::cout << std::endl;
 //   cudaDeviceSynchronize();
 
   thrust::sequence(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n);  // start with column index
-  thrust::transform(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n),
+  thrust::transform(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,
                    d_centr.begin() + i*n, centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
   cudaDeviceSynchronize();
  std:: cout<<"\n Actual vectors:\n";
-thrust::copy_n(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,,std::ostream_iterator<float>(std::cout, ", "));
+thrust::copy_n(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 //}
 
