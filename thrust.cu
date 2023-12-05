@@ -22,6 +22,8 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
+#include <thrust/binary_search.h>
+#include <cstdio>
 #include <math.h>
 
 #include <time.h>
