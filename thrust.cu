@@ -32,10 +32,10 @@
 #include <time.h>
 
 #pragma hd_warning_disable
-#define FILENAME "data.txt"
+//#define FILENAME "data.txt"
 // #define FILENAME "points_generated.txt"
 // #define FILENAME "myData.txt"
-// #define FILENAME "cluster_data.txt"
+ #define FILENAME "cluster_data.txt"
 
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
@@ -250,18 +250,6 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
             thrust::make_tuple(old_d_clusters.end(), d_clusters.end())),
         NotEqual(), 0, thrust::plus<int>());
 
-         std::cout << "\n old_d_clusters:\n";
-  thrust::copy_n(old_d_clusters.begin(), old_d_clusters.end(),
-                 std::ostream_iterator<int>(std::cout, ", "));
-  std::cout << std::endl;
-  std::cout << "\n d_clusters:\n";
-  thrust::copy_n(d_clusters.begin(), d_clusters.end(),
-                 std::ostream_iterator<int>(std::cout, ", "));
-  std::cout << std::endl;
-
-    thrust::copy(d_clusters.begin(), d_clusters.end(), old_d_clusters.begin());
-    std::cout<<"\nDelta: "<<delta<<'\n';
-    
 
     thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
