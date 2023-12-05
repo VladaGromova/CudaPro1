@@ -132,17 +132,18 @@ struct linear_index_to_row_index : public thrust::unary_function<T,T>
   }
 };
 
-struct sum_functor : public thrust::binary_function<float, float, float> {
+struct sum_functor {
     __host__ __device__
     float operator()(const float &a, const float &b) const {
         return a + b;
     }
 };
 
-unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
+
+unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
   thrust::device_vector<float> d_data = data;
-  thrust::device_vector<float> d_centr = centroids;
+  thrust::device_vector<float> d_centr = cs;
   thrust::device_vector<float> values_out(k*N);
 
   unsigned long long compute_time = dtime_usec(0);
@@ -260,7 +261,8 @@ thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.b
 
     // Oblicz sumę wektorów dla każdego klastra
     thrust::reduce_by_key(
-        d_clusters.begin(), d_clusters.end(),
+        d_clusters.begin(), 
+        d_clusters.end(),
         thrust::make_permutation_iterator(d_data.begin(), indices.begin()),
         thrust::make_discard_iterator(),
         thrust::make_permutation_iterator(centroids.begin(), thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), thrust::make_discard_iterator()))),
