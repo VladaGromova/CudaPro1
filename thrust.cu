@@ -1,6 +1,6 @@
 #include <cfloat>
 #include <climits>
-#include <concurrencysal.h>
+//#include <concurrencysal.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cmath>
