@@ -24,9 +24,9 @@
 #include <stdlib.h>
 
 #pragma hd_warning_disable
-#define FILENAME "data.txt"
+//#define FILENAME "data.txt"
 //#define FILENAME "points_generated.txt"
-//#define FILENAME "myData.txt"
+#define FILENAME "myData.txt"
 //#define FILENAME "cluster_data.txt"
 
 #define EPS 0.000001f
@@ -236,6 +236,14 @@ thrust::transform(min_positions.begin(), min_positions.end(), V2.begin(), min_po
    thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
    std::cout << std::endl;
 
+
+  thrust::device_vector<int> indices(N);
+    thrust::sequence(indices.begin(), indices.end());
+    thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
+
+ std:: cout<<"\nIndices:\n";
+   thrust::copy_n(mins.begin(),mins.end(),std::ostream_iterator<float>(std::cout, ", "));
+   std::cout << std::endl;
 
   // min dist
   //   thrust::device_vector<float> mins(N);
