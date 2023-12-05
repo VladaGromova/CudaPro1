@@ -132,6 +132,12 @@ struct linear_index_to_row_index : public thrust::unary_function<T,T>
   }
 };
 
+struct sum_functor : public thrust::binary_function<float, float, float> {
+    __host__ __device__
+    float operator()(const float &a, const float &b) const {
+        return a + b;
+    }
+};
 
 unsigned long long eucl_dist_thrust(thrust::host_vector<float> &centroids, thrust::host_vector<float> &data, thrust::host_vector<float> &dist, int k, int n, int N, int print){
 
@@ -213,7 +219,7 @@ std:: cout<<"Distances :\n";
 
 int numColumns = k; // Number of columns
     thrust::device_vector<float> mins(N);
-    thrust::device_vector<int> min_positions(N);
+    thrust::device_vector<int> d_clusters(N);
 
     // Perform reduction to find minimum value and its position for each row
     thrust::reduce_by_key(
@@ -221,17 +227,17 @@ int numColumns = k; // Number of columns
         thrust::make_transform_iterator(thrust::counting_iterator<int>(k*N), linear_index_to_row_index<int>(numColumns)),
         thrust::make_zip_iterator(thrust::make_tuple(values_out.begin(), thrust::counting_iterator<int>(0))),
         thrust::make_discard_iterator(), // Discard keys output
-        thrust::make_zip_iterator(thrust::make_tuple(mins.begin(), min_positions.begin())),
+        thrust::make_zip_iterator(thrust::make_tuple(mins.begin(), d_clusters.begin())),
         thrust::equal_to<int>(),
         MinWithIndex()
     );
     
 thrust::device_vector<float> V2(N*k);
 thrust::fill(V2.begin(), V2.end(), k);
-thrust::transform(min_positions.begin(), min_positions.end(), V2.begin(), min_positions.begin(), thrust::modulus<int>());
+thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(), d_clusters.begin(), thrust::modulus<int>());
 
  std:: cout<<"\nMin positions:\n";
-   thrust::copy_n(min_positions.begin(),min_positions.end(),std::ostream_iterator<int>(std::cout, ", "));
+   thrust::copy_n(d_clusters.begin(),d_clusters.end(),std::ostream_iterator<int>(std::cout, ", "));
    std::cout << std::endl;
 
 
@@ -242,11 +248,54 @@ thrust::transform(min_positions.begin(), min_positions.end(), V2.begin(), min_po
 
   thrust::device_vector<int> indices(N);
     thrust::sequence(indices.begin(), indices.end());
-    thrust::sort_by_key(min_positions.begin(), min_positions.end(), indices.begin());
+    thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
  std:: cout<<"\nIndices:\n";
    thrust::copy_n(indices.begin(),indices.end(),std::ostream_iterator<float>(std::cout, ", "));
    std::cout << std::endl;
+
+   // CHAT 
+
+    thrust::device_vector<float> centroids(N * n, 0);
+
+    // Oblicz sumę wektorów dla każdego klastra
+    thrust::reduce_by_key(
+        d_clusters.begin(), d_clusters.end(),
+        thrust::make_permutation_iterator(d_data.begin(), indices.begin()),
+        thrust::make_discard_iterator(),
+        thrust::make_permutation_iterator(centroids.begin(), thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), thrust::make_discard_iterator()))),
+        thrust::equal_to<int>(),
+        sum_functor()
+    );
+
+    // Oblicz liczbę wystąpień każdego klastra
+    thrust::device_vector<int> clusterSizes(N);
+    thrust::reduce_by_key(
+        d_clusters.begin(), d_clusters.end(),
+        thrust::make_constant_iterator(1),
+        thrust::make_discard_iterator(),
+        clusterSizes.begin(),
+        thrust::equal_to<int>(),
+        thrust::plus<int>()
+    );
+
+    // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
+    thrust::transform(
+        centroids.begin(), centroids.end(),
+        clusterSizes.begin(),
+        centroids.begin(),
+        thrust::divides<float>()
+    );
+
+    // Wyświetl nowe centroidy
+    thrust::host_vector<float> h_centroids = centroids;
+    for (int i = 0; i < N; ++i) {
+        std::cout << "Centroid " << i << ": ";
+        for (int j = 0; j < n; ++j) {
+            std::cout << h_centroids[i * n + j] << " ";
+        }
+        std::cout << std::endl;
+    }
 
   // min dist
   //   thrust::device_vector<float> mins(N);
