@@ -251,6 +251,7 @@ thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std:
 std::cout << std::endl;
 
 // for(int i=0; i<k; ++i){
+  int i=0;
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
   thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
