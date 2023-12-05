@@ -308,13 +308,17 @@ int i=2;
 thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 
- thrust::device_vector<float> fcol_sums(n);
-  thrust::sequence(fcol_sums.begin(), fcol_sums.end());  // start with column index
-  thrust::transform(fcol_sums.begin(), fcol_sums.end(), fcol_sums.begin(), centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
-  cudaDeviceSynchronize();
+//  thrust::device_vector<float> fcol_sums(n);
+//   thrust::sequence(fcol_sums.begin(), fcol_sums.end());  // start with column index
+//   thrust::transform(fcol_sums.begin(), fcol_sums.end(), fcol_sums.begin(), centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
+//   cudaDeviceSynchronize();
 
-    std:: cout<<"\n Sums:\n";
-thrust::copy_n(fcol_sums.begin(),fcol_sums.end(),std::ostream_iterator<float>(std::cout, ", "));
+  thrust::sequence(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n);  // start with column index
+  thrust::transform(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n),
+                   d_centr.begin() + i*n, centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
+  cudaDeviceSynchronize();
+ std:: cout<<"\n Actual vectors:\n";
+thrust::copy_n(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,,std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
 //}
 
