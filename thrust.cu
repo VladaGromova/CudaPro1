@@ -286,8 +286,8 @@ thrust::copy_n(data_ends.begin(),data_ends.end(),std::ostream_iterator<int>(std:
 std::cout << std::endl;
 thrust::device_vector<bool> docopy(N*n);
 
-int i=2;
-// for(int i=0; i<k; ++i){
+//int i=2;
+for(int i=0; i<k; ++i){
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
   thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
@@ -304,9 +304,9 @@ int i=2;
                   vectorsInCluster.begin(), 
                   is_true()
   );
-  std:: cout<<"\n Actual vectors:\n";
-thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
-std::cout << std::endl;
+//   std:: cout<<"\n Actual vectors:\n";
+// thrust::copy_n(vectorsInCluster.begin(),vectorsInCluster.end(),std::ostream_iterator<float>(std::cout, ", "));
+// std::cout << std::endl;
 
 //  thrust::device_vector<float> fcol_sums(n);
 //   thrust::sequence(fcol_sums.begin(), fcol_sums.end());  // start with column index
@@ -316,20 +316,20 @@ std::cout << std::endl;
   thrust::sequence(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n);  // start with column index
   thrust::transform(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,
                    d_centr.begin() + i*n, centr_sum_functor(clusterSizes[i], n, thrust::raw_pointer_cast(vectorsInCluster.data())));
-  cudaDeviceSynchronize();
- std:: cout<<"\n Actual vectors:\n";
-thrust::copy_n(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,std::ostream_iterator<float>(std::cout, ", "));
+  //cudaDeviceSynchronize();
+//  std:: cout<<"\n Actual vectors:\n";
+// thrust::copy_n(d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,std::ostream_iterator<float>(std::cout, ", "));
+// std::cout << std::endl;
+    thrust::transform(
+        d_centr.begin() + i*n, d_centr.begin() + (i+1)*n,
+         thrust::make_constant_iterator(clusterSizes[i]),
+        d_centr.begin(),
+        thrust::divides<float>()
+    );
+}
+ std:: cout<<"\n Centroids:\n";
+thrust::copy_n(d_centr.begin(), d_centr.end(),std::ostream_iterator<float>(std::cout, ", "));
 std::cout << std::endl;
-//}
-
-
-    // // Podziel sumę przez liczbę wystąpień, aby otrzymać centroidy
-    // thrust::transform(
-    //     centroids.begin(), centroids.end(),
-    //     clusterSizes.begin(),
-    //     centroids.begin(),
-    //     thrust::divides<float>()
-    // );
 
 
   return compute_time;
