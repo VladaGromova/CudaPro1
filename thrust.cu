@@ -2,7 +2,6 @@
 #include <climits>
 // #include <concurrencysal.h>
 #include <cmath>
-#include <concurrencysal.h>
 #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime.h>
