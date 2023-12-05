@@ -250,7 +250,7 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
         thrust::make_zip_iterator(
             thrust::make_tuple(old_d_clusters.end(), d_clusters.end())),
         NotEqual(), 0, thrust::plus<int>());
-
+    std::cout<<"\nDelta: "<<delta<<'\n';
 
     thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
