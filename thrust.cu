@@ -288,6 +288,10 @@ thrust::device_vector<bool> docopy(N*n);
 
 //int i=2;
 for(int i=0; i<k; ++i){
+  
+ std:: cout<<"\n Centroids:\n";
+thrust::copy_n(d_centr.begin(), d_centr.end(),std::ostream_iterator<float>(std::cout, ", "));
+std::cout << std::endl;
   vectorsInCluster.resize(clusterSizes[i] * n);
   actual_indices.resize(clusterSizes[i]);
   thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i], actual_indices.begin());
