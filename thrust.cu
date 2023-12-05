@@ -167,10 +167,10 @@ struct centr_sum_functor
   int C;
   float *arr;
 
-  centr_sum_functor(int _R, int _C, mytype *_arr) : R(_R), C(_C), arr(_arr) {};
+  centr_sum_functor(int _R, int _C, float *_arr) : R(_R), C(_C), arr(_arr) {};
 
   __host__ __device__
-  mytype operator()(int myC){
+  float operator()(int myC){
     float sum = 0.0;
       for (int i = 0; i < R; i++) sum += arr[i*C+myC];
     return sum;
