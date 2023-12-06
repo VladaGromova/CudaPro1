@@ -32,10 +32,6 @@
 #include <time.h>
 
 #pragma hd_warning_disable
-//#define FILENAME "data.txt"
-// #define FILENAME "points_generated.txt"
-// #define FILENAME "myData.txt"
- #define FILENAME "cluster_data.txt"
 
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
@@ -307,8 +303,21 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
   return compute_time;
 }
 
-int main() {
-  std::ifstream inputFile(FILENAME);
+int main(int argc, char** argv) {
+  std::string inFile = "";
+    if( argc == 2 ) {
+      inFile = argv[1];
+    }
+    else {
+      std::cout << "Usage: ./cufile InputFile \n";
+      return 1;
+    }
+  std::ifstream inputFile;
+  inputFile.open(inFile.c_str(), std::ios::in);
+  if (!inputFile.is_open()) {
+        std::cout << "Error opening file: " << inFile << std::endl;
+        return 1;
+    }
   std::string inputString;
   getline(inputFile, inputString);
   long N = atoi(inputString.c_str()); // real A height, real C height
@@ -334,20 +343,6 @@ int main() {
     }
   }
   inputFile.close();
-  std::cout << "Data: \n";
-  for (int i = 0; i < N; ++i) {
-    for (int j = 0; j < n; ++j) {
-      std::cout << data[i * n + j] << ' ';
-    }
-    std::cout << '\n';
-  }
-  std::cout << "\nCentroids: \n";
-  for (int i = 0; i < k; ++i) {
-    for (int j = 0; j < n; ++j) {
-      std::cout << data[i * n + j] << ' ';
-    }
-    std::cout << '\n';
-  }
 
   thrust::host_vector<float> h_data(data, data + N * n);
   thrust::host_vector<float> h_centr(centroids, centroids + k * n);
