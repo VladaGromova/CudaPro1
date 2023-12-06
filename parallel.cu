@@ -143,8 +143,7 @@ __device__ Matrix GetSubMatrix(Matrix A, int row, int col) {
   return Asub;
 }
 
-__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C
-                                   /* , unsigned long long *time*/) {
+__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C) {
 
   int blockRow = blockIdx.y;
   int blockCol = blockIdx.x;
@@ -153,7 +152,6 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C
   int row = threadIdx.y;
   int col = threadIdx.x;
 
- // unsigned long long startTime = clock();
   for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
     Matrix Asub = GetSubMatrix(A, blockRow, m);
     Matrix Bsub = GetSubMatrix(B, m, blockCol);
@@ -170,8 +168,6 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C
   if (fabs(GetElement(Csub, row, col) - FLT_MAX) > EPS) {
     SetElement(Csub, row, col, sqrt(Cvalue));
   }
-  //unsigned long long finishTime = clock();
-  //*time = (finishTime - startTime);
 }
 
 __global__ void MinInEachRow(Matrix C, int *result) {
@@ -279,6 +275,14 @@ void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
 }
 
+void defineArray(int*& assignments, int*& d_assignments){ 
+  assignments = new int[N];
+  std::fill(assignments, assignments + N, 0);
+  cudaMalloc(&d_assignments, N * sizeof(int));
+  cudaMemcpy(d_assignments, assignments, N * sizeof(int),
+             cudaMemcpyHostToDevice);
+}
+
 int main(int argc, char** argv) {
   std::string inFile = "";
     if( argc == 2 ) {
@@ -325,16 +329,16 @@ int main(int argc, char** argv) {
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
                (int)ceil((double)A.height / (double)dimBlock.y));
 
-  // unsigned long long time;
-  // unsigned long long *d_time;
-  // cudaMalloc(&d_time, sizeof(unsigned long long));
-
-  int *assignments = new int[N];
-  std::fill(assignments, assignments + N, 0);
+  
+  // int *assignments = new int[N];
+  // std::fill(assignments, assignments + N, 0);
+  // int *d_assignments;
+  // cudaMalloc(&d_assignments, N * sizeof(int));
+  // cudaMemcpy(d_assignments, assignments, N * sizeof(int),
+  //            cudaMemcpyHostToDevice);
+   int *assignments;
   int *d_assignments;
-  cudaMalloc(&d_assignments, N * sizeof(int));
-  cudaMemcpy(d_assignments, assignments, N * sizeof(int),
-             cudaMemcpyHostToDevice);
+  defineArray(assignments, d_assignments);
 
   int *newassignments = new int[N];
   std::fill(newassignments, newassignments + N, 0);
@@ -358,7 +362,7 @@ int main(int argc, char** argv) {
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
-    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C /*, d_time*/);
+    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C);
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
@@ -394,10 +398,6 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
   }
   
-
-  //cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
-  //std::cout << "Time: " << time << '\n';
-
   delete[] A.elements;
   delete[] B.elements;
   delete[] C.elements;
@@ -411,7 +411,6 @@ int main(int argc, char** argv) {
   cudaFree(d_newassignments);
   cudaFree(d_numOfVectorsInClusters);
   cudaFree(d_changes);
-  //cudaFree(d_time);
   std::cout << "Bye!\n";
   return 0;
 }
