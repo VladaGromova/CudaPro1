@@ -241,13 +241,13 @@ void findNewCentroids(int &n, int &N, int &k,
                         thrust::make_constant_iterator(1),
                         thrust::make_discard_iterator(), clusterSizes.begin(),
                         thrust::equal_to<int>(), thrust::plus<int>());
-
+  std::cout<<"test\n";
   thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
   thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_starts.begin());
   thrust::inclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_ends.begin());
-
+std::cout<<"test\n";
   for (int i = 0; i < k; ++i) {
     vectorsInCluster.resize(clusterSizes[i] * n);
     actual_indices.resize(clusterSizes[i]);
@@ -274,6 +274,7 @@ void findNewCentroids(int &n, int &N, int &k,
                       thrust::make_constant_iterator(clusterSizes[i]),
                       d_centr.begin() + i * n, thrust::divides<float>());
   }
+  std::cout<<"test\n";
 }
 
 void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
