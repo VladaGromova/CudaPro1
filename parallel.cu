@@ -410,9 +410,10 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   cudaFree(d_changes);
 }
 
-void writeDataToFile(const std::string& filename, const int* data, const int* clusters, int N, int n) {
-    std::ofstream outputFile(filename); // Open the file for writing (will overwrite existing file)
-
+void writeDataToFile(const std::string& filename, float* data, const int* clusters, int N, int n) {
+    //std::ofstream outputFile(filename); // Open the file for writing (will overwrite existing file)
+    std::ofstream outputFile;
+    outputFile.open(filename);
     if (outputFile.is_open()) {
         for (int i = 0; i < N; ++i) {
             for (int j = 0; j < n; ++j) {
@@ -497,7 +498,7 @@ int main(int argc, char **argv) {
     std::cout<<clusters[i]<<'\n';
   }
 
-  std::string filename = "output_parallel.txt"; // Change the filename as needed
+  std::string filename = "output_parallel.txt";
   writeDataToFile(filename, data, clusters, N, n);
 
   // memory deallocation
