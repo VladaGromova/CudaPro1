@@ -241,19 +241,19 @@ void findNewCentroids(int &n, int &N, int &k,
                         thrust::make_constant_iterator(1),
                         thrust::make_discard_iterator(), clusterSizes.begin(),
                         thrust::equal_to<int>(), thrust::plus<int>());
-  std::cout<<"test\n";
+  std::cout << "test\n";
   thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
   thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_starts.begin());
   thrust::inclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_ends.begin());
-std::cout<<"test\n";
+  std::cout << "test\n";
   for (int i = 0; i < k; ++i) {
     vectorsInCluster.resize(clusterSizes[i] * n);
     actual_indices.resize(clusterSizes[i]);
     thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i],
                  actual_indices.begin());
-
+    std::cout << "test for\n";
     thrust::binary_search(
         actual_indices.begin(), actual_indices.end(),
         thrust::make_transform_iterator(thrust::make_counting_iterator(0),
@@ -262,6 +262,7 @@ std::cout<<"test\n";
                                         div_functor(n)) +
             N * n,
         docopy.begin());
+    std::cout << "test for\n";
     thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(),
                     vectorsInCluster.begin(), is_true());
     thrust::sequence(fcol_sums.begin(), fcol_sums.end());
@@ -269,12 +270,14 @@ std::cout<<"test\n";
         fcol_sums.begin(), fcol_sums.end(), d_centr.begin() + i * n,
         centr_sum_functor(clusterSizes[i], n,
                           thrust::raw_pointer_cast(vectorsInCluster.data())));
+    std::cout << "test for\n";
     cudaDeviceSynchronize();
     thrust::transform(d_centr.begin() + i * n, d_centr.begin() + (i + 1) * n,
                       thrust::make_constant_iterator(clusterSizes[i]),
                       d_centr.begin() + i * n, thrust::divides<float>());
+    std::cout << "test for\n";
   }
-  std::cout<<"test\n";
+  std::cout << "test\n";
 }
 
 void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
@@ -304,8 +307,8 @@ void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
   }
 }
 
-void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
-                                    int k, int n, int N, int print) {
+void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
+                      int N, int print) {
 
   // additional data declaration
   thrust::device_vector<float> values_out(k * N);
@@ -344,7 +347,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
-    std::cout<<"Iteration nr: "<<numIters<<'\n';
+    std::cout << "Iteration nr: " << numIters << '\n';
     // distance calculation
     cudaEventRecord(start, 0);
     calculateDistances(n, N, k, d_data, d_centr, values_out);
@@ -354,8 +357,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeCalcDist += tmpTime;
 
-
-    std::cout<<"Iteration nr: "<<numIters<<'\n';
+    std::cout << "Iteration nr: " << numIters << '\n';
     // nearest centroid searching
     cudaEventRecord(start, 0);
     findNearestCentroid(k, N, d_centr, values_out, mins, V2, d_clusters);
@@ -364,8 +366,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeFindMin += tmpTime;
 
-
-    std::cout<<"Iteration nr: "<<numIters<<'\n';
+    std::cout << "Iteration nr: " << numIters << '\n';
     // cluster changes counting
     cudaEventRecord(start, 0);
     countClusterChanges(delta, old_d_clusters, d_clusters);
@@ -377,8 +378,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     thrust::copy(d_clusters.begin(), d_clusters.end(),
                  old_d_clusters.begin()); // preprocessing
 
-
-    std::cout<<"Iteration nr: "<<numIters<<'\n';
+    std::cout << "Iteration nr: " << numIters << '\n';
     // new centorids computation
     cudaEventRecord(start, 0);
     findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters,
@@ -389,13 +389,13 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeComputeAverage += tmpTime;
 
-    std::cout<<"Iteration nr: "<<numIters<<'\n';
+    std::cout << "Iteration nr: " << numIters << '\n';
     ++numIters;
   }
   clstrs = new int[old_d_clusters.size()];
   thrust::copy(old_d_clusters.begin(), old_d_clusters.end(), clstrs);
   std::cout << "Iterations:" << numIters << '\n';
-   std::cout << "Elapsed Time [Distance calculation stage] = "
+  std::cout << "Elapsed Time [Distance calculation stage] = "
             << elapsedTimeCalcDist << " milliseconds\n";
   std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
             << " milliseconds\n";
