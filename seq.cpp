@@ -82,7 +82,7 @@ std::vector<Point> kMeansClustering(const std::vector<Point>& points, int k, std
     ++iterations;
     centroids = newCentroids;
   }
-  std::cout << "\nIterations: " << iterations << '\n';
+  
   clusterIndexes = clusters;
   return centroids;
 }

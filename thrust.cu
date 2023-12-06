@@ -396,7 +396,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
   }
   clstrs = new int[old_d_clusters.size()];
   thrust::copy(old_d_clusters.begin(), old_d_clusters.end(), clstrs);
-  std::cout << "Iterations:" << numIters << '\n';
+ 
   std::cout << "Elapsed Time [Distance calculation stage] = "
             << elapsedTimeCalcDist << " milliseconds\n";
   std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
