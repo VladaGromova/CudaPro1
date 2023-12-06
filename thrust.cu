@@ -1,15 +1,8 @@
-// #include <cfloat>
-#include <climits>
-// #include <concurrencysal.h>
-// #include <cmath>
-// #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <fstream>
 #include <iostream>
-// #include <iterator>
 #include <limits.h>
-// #include <math.h>
 #include <sstream>
 #include <stdlib.h>
 #include <string>
@@ -27,8 +20,6 @@
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
-
-// #include <time.h>
 
 #pragma hd_warning_disable
 
@@ -157,62 +148,67 @@ struct NotEqual {
 void calculateDistances(int &n, int &N, int &k,
                         thrust::device_vector<float> &d_data,
                         thrust::device_vector<float> &d_centr,
-                        thrust::device_vector<float> &values_out) {
+                        thrust::device_vector<float> &tmp_distances) {
+  // we wnt to imitate this structure: (c - centroids, v - vetors)
+  // c1 c2 ... ck | c1 c2 ... ck | ...
+  // v1 v1 ... v1 | v2 v2 ... v2 | ...
+  // => d(v1,c1) ... d(v1,cn) | ....
+  // => min_dist_v1_cluster | min_dist_v2_cluster | ...
   thrust::reduce_by_key(
       // keys: 0...0 1...1 ... k*N
       thrust::make_transform_iterator(
           thrust::make_counting_iterator<int>(0),
-          dkeygen(n, N)), // begining of input key range
+          dkeygen(n, N)), // mod n (begining of input key range)
       thrust::make_transform_iterator(
           thrust::make_counting_iterator<int>(n * N * k),
-          dkeygen(n, N)), // end of input key range
+          dkeygen(n, N)), // (end of input key range)
       thrust::make_transform_iterator(
-          thrust::make_zip_iterator( // begining of values range - tu
-                                     // chcemy miec odleglosci
+          thrust::make_zip_iterator( // 
               thrust::make_tuple(
                   thrust::make_permutation_iterator(
                       d_centr.begin(),
                       thrust::make_transform_iterator(
-                          thrust::make_counting_iterator<int>(0), d_idx(n, k))),
+                          thrust::make_counting_iterator<int>(0), d_idx(n, k))), // function to take coordinate of centroid
                   thrust::make_permutation_iterator(
                       d_data.begin(),
                       thrust::make_transform_iterator(
-                          thrust::make_counting_iterator<int>(0),
-                          c_idx(n, k))))),
+                          thrust::make_counting_iterator<int>(0), 
+                          c_idx(n, k))))), // to take coordinate of vector 
           my_dist()),
-      thrust::make_discard_iterator(), // keys output (nie potrzebujemy
-                                       // tego)
-      values_out.begin()               // values output - wynik
+      thrust::make_discard_iterator(), // keys output, we don't need it
+      tmp_distances.begin()               // values output - result (distances)
   );
 
-  thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
+  thrust::transform(tmp_distances.begin(), tmp_distances.end(), tmp_distances.begin(),
                     my_sqrt());
 }
 
 void findNearestCentroid(int &k, int &N, thrust::device_vector<float> &d_centr,
-                         thrust::device_vector<float> &values_out,
+                         thrust::device_vector<float> &tmp_distances,
                          thrust::device_vector<float> &mins,
-                         thrust::device_vector<float> &V2,
+                         thrust::device_vector<float> &vec_modulus_k,
                          thrust::device_vector<int> &d_clusters) {
+  // if we interprate it lika a matrix the task will be just to find minimum for each row 
   thrust::reduce_by_key(
       thrust::make_transform_iterator(thrust::counting_iterator<int>(0),
-                                      linear_index_to_row_index<int>(k)),
+                                      linear_index_to_row_index<int>(k)), // to get the number of element in row 
+                                      //-> it gives us cluster number (but from the begining of array, not row)
       thrust::make_transform_iterator(thrust::counting_iterator<int>(k * N),
                                       linear_index_to_row_index<int>(k)),
       thrust::make_zip_iterator(thrust::make_tuple(
-          values_out.begin(), thrust::counting_iterator<int>(0))),
-      thrust::make_discard_iterator(), // Discard keys output
+          tmp_distances.begin(), thrust::counting_iterator<int>(0))),
+      thrust::make_discard_iterator(), // we don;'t need keys output
       thrust::make_zip_iterator(
           thrust::make_tuple(mins.begin(), d_clusters.begin())),
       thrust::equal_to<int>(), MinWithIndex());
 
-  thrust::fill(V2.begin(), V2.end(), k);
-  thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(),
-                    d_clusters.begin(), thrust::modulus<int>());
+  thrust::fill(vec_modulus_k.begin(), vec_modulus_k.end(), k);
+  thrust::transform(d_clusters.begin(), d_clusters.end(), vec_modulus_k.begin(),
+                    d_clusters.begin(), thrust::modulus<int>()); // to get real number of centroid 
 }
 
 void countClusterChanges(int &delta, thrust::device_vector<int> &old_d_clusters,
-                         thrust::device_vector<int> &d_clusters) {
+                         thrust::device_vector<int> &d_clusters) { // difference between previous assignment and actual
   delta = thrust::transform_reduce(
       thrust::make_zip_iterator(
           thrust::make_tuple(old_d_clusters.begin(), d_clusters.begin())),
@@ -234,46 +230,48 @@ void findNewCentroids(int &n, int &N, int &k,
                       thrust::device_vector<float> &fcol_sums,
                       thrust::device_vector<bool> &docopy) {
   thrust::sequence(indices.begin(), indices.end());
+  // if in 1st cluster there are v0, v5, in 2nd - v1, ... then indices will be [0, 5, 1, ...]
   thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
   // num of vectors in each cluster
   thrust::reduce_by_key(d_clusters.begin(), d_clusters.end(),
-                        thrust::make_constant_iterator(1),
+                        thrust::make_constant_iterator(1), // we have to add 1 to sum if vector is in cluster
                         thrust::make_discard_iterator(), clusterSizes.begin(),
                         thrust::equal_to<int>(), thrust::plus<int>());
   
   thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
+  // for each cluster we want to find range of indices (vector numbers-ids) - actual_indices
   thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(),
-                         data_starts.begin());
+                         data_starts.begin()); 
   thrust::inclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_ends.begin());
   
   for (int i = 0; i < k; ++i) {
-    vectorsInCluster.resize(clusterSizes[i] * n);
+    vectorsInCluster.resize(clusterSizes[i] * n); // vectors in i-th cluster
     actual_indices.resize(clusterSizes[i]);
     thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i],
-                 actual_indices.begin());
+                 actual_indices.begin()); // cut actual segment
     
     thrust::binary_search(
         actual_indices.begin(), actual_indices.end(),
         thrust::make_transform_iterator(thrust::make_counting_iterator(0),
-                                        div_functor(n)),
+                                        div_functor(n)), // mod n
         thrust::make_transform_iterator(thrust::make_counting_iterator(0),
                                         div_functor(n)) +
             N * n,
         docopy.begin());
   
-    thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(),
+    thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(), // get actual vectors
                     vectorsInCluster.begin(), is_true());
     
     thrust::sequence(fcol_sums.begin(), fcol_sums.end());
     
     thrust::transform(
         fcol_sums.begin(), fcol_sums.end(), d_centr.begin() + i * n,
-        centr_sum_functor(clusterSizes[i], n,
+        centr_sum_functor(clusterSizes[i], n, // sum up elements from same columns
                           thrust::raw_pointer_cast(vectorsInCluster.data())));
     
-    //cudaDeviceSynchronize();
+    cudaDeviceSynchronize(); // reason: raw_pointer
     thrust::transform(d_centr.begin() + i * n, d_centr.begin() + (i + 1) * n,
                       thrust::make_constant_iterator(clusterSizes[i]),
                       d_centr.begin() + i * n, thrust::divides<float>());
@@ -282,52 +280,26 @@ void findNewCentroids(int &n, int &N, int &k,
   
 }
 
-void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
-              float *&centroids) {
-  std::string inputString;
-  getline(inputFile, inputString);
-  N = atoi(inputString.c_str()); // real A height, real C height
-  getline(inputFile, inputString);
-  n = atoi(inputString.c_str()); // real A width, real B height
-  getline(inputFile, inputString);
-  k = atoi(inputString.c_str()); // real B width, real C width
 
-  data = new float[N * n];
-  centroids = new float[k * n];
-  float value = 0.0f;
-  int ind = 0;
-  while (getline(inputFile, inputString)) {
-    std::istringstream iss(inputString);
-    value = 0.0f;
-    while (iss >> value) {
-      data[ind] = value;
-      if (ind < k * n) {
-        centroids[ind] = value;
-      }
-      ++ind;
-    }
-  }
-}
-
-void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
+void KMeansClustering(float *&data, float *&cs, int *&clstrs, int k, int n,
                       int N, int print) {
 
   // additional data declaration
-  thrust::device_vector<float> values_out(k * N);
+  thrust::device_vector<float> tmp_distances(k * N); // distances for k centroids and N vectors
   int delta = INT_MAX;
   int numIters = 0;
-  thrust::device_vector<int> d_clusters(N);
-  thrust::device_vector<int> old_d_clusters(N);
+  thrust::device_vector<int> d_clusters(N); // vector for cluster assignments
+  thrust::device_vector<int> old_d_clusters(N); // vector for previous cluster assignments
   thrust::fill(d_clusters.begin(), d_clusters.end(), 0);
-  thrust::device_vector<float> mins(N);
-  thrust::device_vector<float> V2(N * k);
-  thrust::device_vector<int> indices(N);
-  thrust::device_vector<int> clusterSizes(k);
-  thrust::device_vector<float> vectorsInCluster(n);
-  thrust::device_vector<float> actual_indices(1);
-  thrust::device_vector<int> data_starts(k);
-  thrust::device_vector<int> data_ends(k);
-  thrust::device_vector<bool> docopy(N * n);
+  thrust::device_vector<float> mins(N); // minimum discance for each vector
+  thrust::device_vector<float> vec_modulus_k(N * k); // vector filled with k to get the number of cluster from long array
+  thrust::device_vector<int> indices(N); // id-s of vectors from sorted clusters
+  thrust::device_vector<int> clusterSizes(k); // number of vectors in each cluster 
+  thrust::device_vector<float> vectorsInCluster(n); // vectors in actual cluster (will be resized, but we always have >= 1)
+  thrust::device_vector<float> actual_indices(1); // range from indices for actual cluster 
+  thrust::device_vector<int> data_starts(k); // starts of segments from indices
+  thrust::device_vector<int> data_ends(k); // ends of segments from indices
+  thrust::device_vector<bool> docopy(N * n); // binary mask
   thrust::device_vector<float> fcol_sums(n);
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
@@ -352,7 +324,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
     
     // distance calculation
     cudaEventRecord(start, 0);
-    calculateDistances(n, N, k, d_data, d_centr, values_out);
+    calculateDistances(n, N, k, d_data, d_centr, tmp_distances);
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
@@ -362,7 +334,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
     
     // nearest centroid searching
     cudaEventRecord(start, 0);
-    findNearestCentroid(k, N, d_centr, values_out, mins, V2, d_clusters);
+    findNearestCentroid(k, N, d_centr, tmp_distances, mins, vec_modulus_k, d_clusters);
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&tmpTime, start, stop);
@@ -427,6 +399,33 @@ void writeDataToFile(float* data, const int* clusters, int N, int n) {
     }
 }
 
+void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
+              float *&centroids) {
+  std::string inputString;
+  getline(inputFile, inputString);
+  N = atoi(inputString.c_str()); 
+  getline(inputFile, inputString);
+  n = atoi(inputString.c_str()); 
+  getline(inputFile, inputString);
+  k = atoi(inputString.c_str()); 
+
+  data = new float[N * n];
+  centroids = new float[k * n];
+  float value = 0.0f;
+  int ind = 0;
+  while (getline(inputFile, inputString)) {
+    std::istringstream iss(inputString);
+    value = 0.0f;
+    while (iss >> value) {
+      data[ind] = value;
+      if (ind < k * n) {
+        centroids[ind] = value;
+      }
+      ++ind;
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   // file validation
   std::string inFile = "";
@@ -444,9 +443,9 @@ int main(int argc, char **argv) {
   }
 
   // data declaration
-  float *data;
-  float *centroids;
-  int *clusters;
+  float *data; // vectors
+  float *centroids; // new centroids
+  int *clusters; // clusters[i] == old cluster number for i-th vector
   int N, n, k;
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
@@ -465,20 +464,13 @@ int main(int argc, char **argv) {
 
   // K-means clusterization
   cudaEventRecord(start, 0);
-  eucl_dist_thrust(data, centroids, clusters, k, n, N, 1);
+  KMeansClustering(data, centroids, clusters, k, n, N, 1);
   cudaEventRecord(stop, 0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime, start, stop);
   std::cout << "Elapsed Time [Full algorithm + time measurement] = "
             << elapsedTime << " milliseconds\n";
 
-  // std::cout << "points and clusters:\n";
-  // for (int i = 0; i < N; ++i) {
-  //   for (int j = 0; j < n; ++j) {
-  //     std::cout << data[i * n + j] << ' ';
-  //   }
-  //   std::cout << clusters[i] << '\n';
-  // }
   writeDataToFile(data, clusters, N, n);
 
   delete[] data;
