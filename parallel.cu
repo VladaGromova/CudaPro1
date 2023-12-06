@@ -307,7 +307,8 @@ void defineArrays(int &N, int &k, int *&assignments, int *&d_assignments,
 }
 
 void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
-                          Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C, int *&clusters) {
+                          Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C,
+                          int *&clusters) {
   cudaEvent_t startStage, stopStage;
   int numIters = 0; // number of iterations
   int changes =
@@ -335,7 +336,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     // distances calculation
     cudaEventRecord(startStage, 0);
     CalculateDistances<<<dimGrid, dimBlock>>>(
@@ -346,13 +347,13 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeCalcDist += tmpTime;
 
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     // memory reseting
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
 
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     // nearest centroid searching
     cudaEventRecord(startStage, 0);
     MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
@@ -361,7 +362,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeFindMin += tmpTime;
 
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     // cluster changes counting
     cudaEventRecord(startStage, 0);
     CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
@@ -371,13 +372,13 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComapreArrays += tmpTime;
 
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     // new centorids computation
     cudaEventRecord(startStage, 0);
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
 
-    std::cout<<"Iteration nr "<< numIters<<'\n';
+    std::cout << "Iteration nr " << numIters << '\n';
     ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_B, d_numOfVectorsInClusters, k, n);
     cudaEventRecord(stopStage, 0);
@@ -387,21 +388,30 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
 
     // cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
     //            cudaMemcpyDeviceToDevice);
-                cudaError_t ret; 
+    cudaError_t ret;
     ret = cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
-               cudaMemcpyDeviceToDevice);
-    if(ret == cudaErrorInvalidValue)
-        printf("1!\n"); 
-    else if(ret == cudaErrorInvalidDevicePointer)
-        printf("2!\n"); 
-    else if(ret == cudaErrorInvalidMemcpyDirection)
-        printf("3!\n"); 
+                     cudaMemcpyDeviceToDevice);
+    if (ret == cudaErrorInvalidValue) {
+      printf("1!\n");
+    } else if (ret == cudaErrorInvalidDevicePointer) {
+      printf("2!\n");
+    } else if(ret == cudaErrorInvalidMemcpyDirection){
+      printf("3!\n");
+    }
 
-
-    cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+    ret = cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+    if (ret == cudaErrorInvalidValue) {
+      printf("1!\n");
+    } else if (ret == cudaErrorInvalidDevicePointer) {
+      printf("2!\n");
+    } else if(ret == cudaErrorInvalidMemcpyDirection){
+      printf("3!\n");
+    }
     ++numIters;
   }
-  cudaMemcpy(clusters, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
+  
+  cudaMemcpy(clusters, d_newassignments, N * sizeof(int),
+             cudaMemcpyDeviceToHost);
   std::cout << "Elapsed Time [Distance calculation stage] = "
             << elapsedTimeCalcDist << " milliseconds\n";
   std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
