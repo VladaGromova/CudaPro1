@@ -275,7 +275,8 @@ void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
 }
 
-void defineArray(int& N, int& k, int*& assignments, int*& d_assignments, int*& newassignments, int*& d_newassignments, int*& numOfVectorsInClusters, int*& d_numOfVectorsInClusters){ 
+void defineArrays(int& N, int& k, int*& assignments, int*& d_assignments, int*& newassignments, 
+                  int*& d_newassignments, int*& numOfVectorsInClusters, int*& d_numOfVectorsInClusters, int*& d_changes){ 
   assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
   cudaMalloc(&d_assignments, N * sizeof(int));
@@ -292,6 +293,9 @@ void defineArray(int& N, int& k, int*& assignments, int*& d_assignments, int*& n
   std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
   cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
   cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
+  
+  cudaMalloc(&d_changes, sizeof(int));
+  cudaMemset(d_changes, 0, sizeof(int));
 }
 
 int main(int argc, char** argv) {
@@ -311,9 +315,7 @@ int main(int argc, char** argv) {
     }
 
   Matrix A, B, C; 
-  int N; 
-  int n;
-  int k;
+  int N, n, k;
 
   cudaEvent_t start, stop;
   float elapsedTime;
@@ -340,34 +342,15 @@ int main(int argc, char** argv) {
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
                (int)ceil((double)A.height / (double)dimBlock.y));
 
-  
-  // int *assignments = new int[N];
-  // std::fill(assignments, assignments + N, 0);
-  // int *d_assignments;
-  // cudaMalloc(&d_assignments, N * sizeof(int));
-  // cudaMemcpy(d_assignments, assignments, N * sizeof(int),
-  //            cudaMemcpyHostToDevice);
-  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters;
-  defineArray(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters);
+  // assignments (size N): assignments[i] == old cluster number for i-th vector 
+  // newassignments (size N): newassignments[i] == new cluster number for i-th vector 
+  // numOfVectorsInClusters (size k): numOfVectorsInClusters[i] == number of vectors in i-th cluster 
+  int numIters = 0; // number of iterations
+  int changes = INT_MAX; // number of vectors that changed cluster during last iteration
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, d_changes;
+  defineArrays(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters, d_changes);
 
-  // int *newassignments = new int[N];
-  // std::fill(newassignments, newassignments + N, 0);
-  // int *d_newassignments;
-  // cudaMalloc(&d_newassignments, N * sizeof(int));
-  // cudaMemcpy(d_newassignments, newassignments, N * sizeof(int),
-  //            cudaMemcpyHostToDevice);
-
-  // int *numOfVectorsInClusters = new int[k];
-  // std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
-  // int *d_numOfVectorsInClusters;
-  // cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
-  // cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
-
-  int numIters = 0;
-  int changes = INT_MAX;
-  int *d_changes;
-  cudaMalloc(&d_changes, sizeof(int));
-  cudaMemset(d_changes, 0, sizeof(int));
+//  int *d_changes;
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
