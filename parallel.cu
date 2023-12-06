@@ -244,21 +244,7 @@ __global__ void ComputeSum(Matrix matA, const int *groups, Matrix matB, int N,
   __syncthreads();
 }
 
-int main(int argc, char** argv) {
-  std::string inFile = "";
-    if( argc == 2 ) {
-      inFile = argv[1];
-    }
-    else {
-      std::cout << "Usage: ./cufile InputFile \n";
-      return 1;
-    }
-  std::ifstream inputFile;
-  inputFile.open(inFile.c_str(), std::ios::in);
-  if (!inputFile.is_open()) {
-        std::cout << "Error opening file: " << inFile << std::endl;
-        return 1;
-    }
+void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C){
   std::string inputString;
   getline(inputFile, inputString);
   int N = atoi(inputString.c_str()); // real A height, real C height
@@ -284,7 +270,6 @@ int main(int argc, char** argv) {
     B_width += (BLOCK_SIZE - (k % BLOCK_SIZE));
   }
 
-  Matrix A, B, C; 
 
   // Read data into matrices
   FillMatrices(A, A_width, A_height, n, N, B, B_width, B_height, k, n,
@@ -292,11 +277,34 @@ int main(int argc, char** argv) {
   // Matrix A contains dataset: one row - one vektor
   // Matrix B contains k centroids (first k vectors from dataset): one column - one vector 
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
-  inputFile.close();
-  Matrix d_A, d_B, d_C;
+}
 
+int main(int argc, char** argv) {
+  std::string inFile = "";
+    if( argc == 2 ) {
+      inFile = argv[1];
+    }
+    else {
+      std::cout << "Usage: ./cufile InputFile \n";
+      return 1;
+    }
+  std::ifstream inputFile;
+  inputFile.open(inFile.c_str(), std::ios::in);
+  if (!inputFile.is_open()) {
+        std::cout << "Error opening file: " << inFile << std::endl;
+        return 1;
+    }
+
+  Matrix A, B, C; 
+  int N; 
+  int n;
+  int k;
+  readFile(inputFile, N, n, k, A, B, C);
+  
+  inputFile.close();
+
+  Matrix d_A, d_B, d_C;
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
- 
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
