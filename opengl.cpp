@@ -1,9 +1,10 @@
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
+#define GLEW_STATIC // This must be defined when statically linking to GLEW
+#include "glew.h"
 
-// Include GLEW
-#include <GL/glew.h>
+#pragma comment (lib, "glew32s.lib")
 
 // Include GLFW
 #include <GLFW/glfw3.h>
