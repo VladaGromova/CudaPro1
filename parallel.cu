@@ -241,7 +241,8 @@ int main(int argc, char** argv) {
       std::cout << "Usage: ./cufile InputFile \n";
       return 1;
     }
-  std::ifstream inputFile(inFile);
+  std::ifstream inputFile();
+  inputFile.open(inFile.c_str(), ios::in);
   std::string inputString;
   getline(inputFile, inputString);
   int N = atoi(inputString.c_str()); // real A height, real C height
