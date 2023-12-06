@@ -155,15 +155,15 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C) {
   for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
     Matrix Asub = GetSubMatrix(A, blockRow, m);
     Matrix Bsub = GetSubMatrix(B, m, blockCol);
-    __shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float As[BLOCK_SIZE][BLOCK_SIZE]; // shared memory so every thread from one block reads from this 
     __shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
     As[row][col] = GetElement(Asub, row, col);
     Bs[row][col] = GetElement(Bsub, row, col);
-    __syncthreads();
+    __syncthreads(); // make sure the sub-matrices are loaded before starting the computation
     for (int e = 0; e < BLOCK_SIZE; ++e) {
       Cvalue += pow(As[row][e] - Bs[e][col], 2);
     }
-    __syncthreads();
+    __syncthreads(); // make sure that computation is done
   }
   if (fabs(GetElement(Csub, row, col) - FLT_MAX) > EPS) {
     SetElement(Csub, row, col, sqrt(Cvalue));
@@ -172,7 +172,7 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C) {
 
 __global__ void MinInEachRow(Matrix C, int *result) {
   int rows = C.realHeight;
-  int tid = threadIdx.x + blockIdx.x * blockDim.x; // nr wiersza
+  int tid = threadIdx.x + blockIdx.x * blockDim.x; // number of row
   float minValue;
   int minIndex;
   if (tid < rows) {
@@ -202,15 +202,15 @@ __global__ void CompareArrays(const int *array1, const int *array2, int size,
       localCounts[tid]++;
     }
   }
-  __syncthreads();
+  __syncthreads(); // to wait for the shared memory operation to complete before continuing
   for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
     if (tid < stride) {
       localCounts[tid] += localCounts[tid + stride];
     }
-    __syncthreads();
+    __syncthreads(); // it is neccessary because in every iteratiion we use results from previous
   }
-  if (tid == 0) {
-    atomicAdd(count, localCounts[0]);
+  if (tid == 0) { // to make sure that one block changes is added once
+    atomicAdd(count, localCounts[0]); // to avoid parallelism problems
   }
 }
 
@@ -231,13 +231,13 @@ __global__ void ComputeSum(Matrix matA, const int *groups, Matrix matB, int N,
   if (tid < N) {
     int groupId = groups[tid];
     atomicAdd(&numOfVectors[groupId], 1);
-    __syncthreads();
+    __syncthreads(); // make sure that every thread incremented numOfVectors[groupId]
     for (int i = 0; i < n; ++i) {
       atomicAdd(&matB.elements[i * matB.stride + groupId],
                 GetElement(matA, tid, i));
     }
   }
-  __syncthreads();
+  //__syncthreads();
 }
 
 void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C){
@@ -318,6 +318,7 @@ void freeMemory(Matrix& A, Matrix& B, Matrix& C,
 }
 
 int main(int argc, char** argv) {
+  // file validation
   std::string inFile = "";
     if( argc == 2 ) {
       inFile = argv[1];
@@ -333,11 +334,16 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-  Matrix A, B, C; 
+  // data declaration
+  Matrix A, B, C, d_A, d_B, d_C; 
   int N, n, k;
-
   cudaEvent_t start, stop, startStage, stopStage;
   float elapsedTime;
+  int numIters = 0; // number of iterations
+  int changes = INT_MAX; // number of vectors that changed cluster during last iteration
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
+  float elapsedTimeFullAlgoritm, tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0, elapsedTimeComapreArrays = 0.0, elapsedTimeComputeAverage = 0.0;
+
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
   cudaEventRecord(start,0);
@@ -348,7 +354,6 @@ int main(int argc, char** argv) {
   std::cout<<"\nElapsed Time [Data reading] = "<<elapsedTime<<" milliseconds\n";
   inputFile.close();
 
-  Matrix d_A, d_B, d_C;
   cudaEventRecord(start,0);
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
   cudaEventRecord(stop,0);
@@ -364,14 +369,10 @@ int main(int argc, char** argv) {
   // assignments (size N): assignments[i] == old cluster number for i-th vector 
   // newassignments (size N): newassignments[i] == new cluster number for i-th vector 
   // numOfVectorsInClusters (size k): numOfVectorsInClusters[i] == number of vectors in i-th cluster 
-  int numIters = 0; // number of iterations
-  int changes = INT_MAX; // number of vectors that changed cluster during last iteration
-  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   defineArrays(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters, d_changes);
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
-  float elapsedTimeFullAlgoritm, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0, elapsedTimeComapreArrays = 0.0, elapsedTimeComputeAverage = 0.0, tmpTime;
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   cudaEventRecord(start,0);
@@ -422,7 +423,7 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTimeFullAlgoritm,start,stop);
-  std::cout<<"Elapsed Time [Full algorithm] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Full algorithm + time measurement] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
   std::cout<<"Elapsed Time [Distance calculation stage] = "<<elapsedTimeCalcDist<<" milliseconds\n";
   std::cout<<"Elapsed Time [Finding minimum stage] = "<<elapsedTimeFindMin<<" milliseconds\n";
   std::cout<<"Elapsed Time [Array comparing stage] = "<<elapsedTimeComapreArrays<<" milliseconds\n";
