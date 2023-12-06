@@ -12,7 +12,7 @@ CU_FILE_1 = parallel.cu
 CU_FILE_2 = thrust.cu
 
 # Output file names
-OUTPUT_CPP = sequential_cpp
+OUTPUT_CPP = seq_cpp
 OUTPUT_CU_1 = kernel_cu
 OUTPUT_CU_2 = thrust_cu
 
