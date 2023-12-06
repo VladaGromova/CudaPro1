@@ -343,7 +343,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
-
+    std::cout<<"Iteration nr: "<<numIters<<'\n';
     // distance calculation
     cudaEventRecord(start, 0);
     calculateDistances(n, N, k, d_data, d_centr, values_out);
