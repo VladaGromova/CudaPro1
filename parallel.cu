@@ -233,12 +233,12 @@ __global__ void ComputeSum(Matrix matA, const int *groups, Matrix matB, int N,
 }
 
 int main(int argc, char** argv) {
-  string inFile = "";
+  std::string inFile = "";
     if( argc == 2 ) {
       inFile = argv[1];
     }
     else {
-      cout << "Usage: ./cufile InputFile \n";
+      std::cout << "Usage: ./cufile InputFile \n";
       return 1;
     }
   std::ifstream inputFile(inFile);
