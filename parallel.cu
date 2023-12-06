@@ -298,6 +298,25 @@ void defineArrays(int& N, int& k, int*& assignments, int*& d_assignments, int*& 
   cudaMemset(d_changes, 0, sizeof(int));
 }
 
+void freeMemory(Matrix& A, Matrix& B, Matrix& C,
+               int* assignments,int* newassignments,int* numOfVectorsInClusters, 
+               Matrix& d_A, Matrix& d_B, Matrix& d_C,
+               int* d_assignments,int* d_newassignments,int* d_numOfVectorsInClusters,int* d_changes){
+  delete[] A.elements;
+  delete[] B.elements;
+  delete[] C.elements;
+  delete[] assignments;
+  delete[] newassignments;
+  delete[] numOfVectorsInClusters;
+  cudaFree(d_A.elements);
+  cudaFree(d_B.elements);
+  cudaFree(d_C.elements);
+  cudaFree(d_assignments);
+  cudaFree(d_newassignments);
+  cudaFree(d_numOfVectorsInClusters);
+  cudaFree(d_changes);
+}
+
 int main(int argc, char** argv) {
   std::string inFile = "";
     if( argc == 2 ) {
@@ -326,7 +345,7 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime,start,stop);
-  std::cout<<"\n[Data reading] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
+  std::cout<<"\nElapsed Time [Data reading] = "<<elapsedTime<<" milliseconds\n";
   inputFile.close();
 
   Matrix d_A, d_B, d_C;
@@ -335,7 +354,7 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime,start,stop);
-  std::cout<<"[CPU - GPU copying] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
+  std::cout<<"Elapsed Time [CPU - GPU copying] = "<<elapsedTime<<" milliseconds\n";
 
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
@@ -374,7 +393,7 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTimeFullAlgoritm,start,stop);
-  std::cout<<"\n[Full algorithm] Elapsed Time = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
+  std::cout<<"\nElapsed Time [Full algorithm] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
 
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
@@ -387,19 +406,7 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
   }
   
-  delete[] A.elements;
-  delete[] B.elements;
-  delete[] C.elements;
-  delete[] assignments;
-  delete[] newassignments;
-  delete[] numOfVectorsInClusters;
-  cudaFree(d_A.elements);
-  cudaFree(d_B.elements);
-  cudaFree(d_C.elements);
-  cudaFree(d_assignments);
-  cudaFree(d_newassignments);
-  cudaFree(d_numOfVectorsInClusters);
-  cudaFree(d_changes);
-  std::cout << "Bye!\n";
+  freeMemory(A, B, C, assignments, newassignments, numOfVectorsInClusters, d_A, d_B, d_C, d_assignments, d_newassignments, d_numOfVectorsInClusters, d_changes);
+
   return 0;
 }
