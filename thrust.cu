@@ -157,22 +157,8 @@ struct NotEqual {
 unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
                                     int k, int n, int N, int print) {
                                       
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  float elapsedTime;
-
-  cudaEventRecord(start, 0);
-  thrust::device_vector<float> d_data(data, data + n*N);
-  thrust::device_vector<float> d_centr(cs, cs + n*k);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
-            << " milliseconds\n";
-
+  // additional data declaration
   thrust::device_vector<float> values_out(k * N);
-
   int delta = INT_MAX;
   int numIters = 0;
   thrust::device_vector<int> d_clusters(N);
@@ -188,6 +174,26 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
   thrust::device_vector<int> data_ends(k);
   thrust::device_vector<bool> docopy(N * n);
   thrust::device_vector<float> fcol_sums(n);
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  float elapsedTime;
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,
+      *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
+  float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
+                 elapsedTimeComapreArrays = 0.0,
+                 elapsedTimeComputeAverage = 0.0;
+
+  // CPU - GPU copying
+  cudaEventRecord(start, 0);
+  thrust::device_vector<float> d_data(data, data + n*N);
+  thrust::device_vector<float> d_centr(cs, cs + n*k);
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime, start, stop);
+  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
+            << " milliseconds\n";
+
 
   unsigned long long compute_time = dtime_usec(0);
 
@@ -350,6 +356,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // data declaration
   float *data;
   float *centroids;
   int *clusters;
@@ -359,7 +366,7 @@ int main(int argc, char **argv) {
   cudaEventCreate(&stop);
   float elapsedTime;
 
-  //read data from file
+  // data initialization from file
   cudaEventRecord(start, 0);
   readFile(inputFile, N, n, k, data, centroids);
   cudaEventRecord(stop, 0);
