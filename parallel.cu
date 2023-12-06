@@ -360,7 +360,11 @@ int main(int argc, char** argv) {
 
     cudaMemcpy(newassignments, d_newassignments, N * sizeof(int),
                cudaMemcpyDeviceToHost); // optional
-
+    std::cout<<"\n Clusters:\n";
+    for(int i=0; i<N; ++i){
+      std::cout<<newassignments[i]<< ' ';
+    }
+    std:: cout<<'\n';
   }
 
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
