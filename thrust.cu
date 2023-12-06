@@ -157,7 +157,7 @@ struct NotEqual {
 unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
                                     thrust::host_vector<float> &data,
                                     thrust::host_vector<float> &dist,*/
-                                    float *&data, float *&cs, float *&clstrs,
+                                    float *&data, float *&cs, int *&clstrs,
                                     int k, int n, int N, int print) {
 
   // thrust::device_vector<float> d_data = data;
@@ -217,7 +217,8 @@ unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
     thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
                       my_sqrt());
     cudaDeviceSynchronize();
-    thrust::copy(values_out.begin(), values_out.end(), dist.begin());
+    
+    //thrust::copy(values_out.begin(), values_out.end(), dist.begin());
 
     int numColumns = k; // Number of columns
 
