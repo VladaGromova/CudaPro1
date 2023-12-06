@@ -388,6 +388,7 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeComputeAverage += tmpTime;
 
+    std::cout<<"Iteration nr: "<<numIters<<'\n';
     ++numIters;
   }
   clstrs = new int[old_d_clusters.size()];
