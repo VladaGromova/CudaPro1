@@ -327,11 +327,11 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
   float elapsedTime;
-  // int *assignments, *d_assignments, *newassignments, *d_newassignments,
-  //     *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
-  // float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
-  //                elapsedTimeComapreArrays = 0.0,
-  //                elapsedTimeComputeAverage = 0.0;
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,
+      *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
+  float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
+                 elapsedTimeComapreArrays = 0.0,
+                 elapsedTimeComputeAverage = 0.0;
 
   // CPU - GPU copying
   cudaEventRecord(start, 0);
@@ -347,28 +347,56 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     delta = 0;
 
     // distance calculation
+    cudaEventRecord(start, 0);
     calculateDistances(n, N, k, d_data, d_centr, values_out);
     cudaDeviceSynchronize();
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&tmpTime, start, stop);
+    elapsedTimeCalcDist += tmpTime;
 
     // nearest centroid searching
+    cudaEventRecord(start, 0);
     findNearestCentroid(k, N, d_centr, values_out, mins, V2, d_clusters);
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&tmpTime, start, stop);
+    elapsedTimeFindMin += tmpTime;
 
     // cluster changes counting
+    cudaEventRecord(start, 0);
     countClusterChanges(delta, old_d_clusters, d_clusters);
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&tmpTime, start, stop);
+    elapsedTimeComapreArrays += tmpTime;
 
     thrust::copy(d_clusters.begin(), d_clusters.end(),
                  old_d_clusters.begin()); // preprocessing
 
     // new centorids computation
+    cudaEventRecord(start, 0);
     findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters,
                      clusterSizes, data_starts, data_ends, vectorsInCluster,
                      actual_indices, fcol_sums, docopy);
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&tmpTime, start, stop);
+    elapsedTimeComputeAverage += tmpTime;
 
     ++numIters;
   }
   clstrs = new int[old_d_clusters.size()];
   thrust::copy(old_d_clusters.begin(), old_d_clusters.end(), clstrs);
   std::cout << "Iterations:" << numIters << '\n';
+   std::cout << "Elapsed Time [Distance calculation stage] = "
+            << elapsedTimeCalcDist << " milliseconds\n";
+  std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
+            << " milliseconds\n";
+  std::cout << "Elapsed Time [Array comparing stage] = "
+            << elapsedTimeComapreArrays << " milliseconds\n";
+  std::cout << "Elapsed Time [Computing average stage] = "
+            << elapsedTimeComputeAverage << " milliseconds\n";
 
   cudaEventDestroy(start);
   cudaEventDestroy(stop);
