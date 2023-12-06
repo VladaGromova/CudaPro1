@@ -335,6 +335,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     // distances calculation
     cudaEventRecord(startStage, 0);
     CalculateDistances<<<dimGrid, dimBlock>>>(
