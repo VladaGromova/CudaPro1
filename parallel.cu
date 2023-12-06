@@ -469,6 +469,7 @@ int main(int argc, char **argv) {
     std::cout<<clusters[i]<<'\n';
   }
 
+  // memory deallocation
   delete[] A.elements;
   delete[] B.elements;
   delete[] C.elements;

@@ -1,18 +1,19 @@
-#include <cfloat>
+// #include <cfloat>
 #include <climits>
 // #include <concurrencysal.h>
-#include <cmath>
-#include <cstdio>
+// #include <cmath>
+// #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <fstream>
 #include <iostream>
-#include <iterator>
+// #include <iterator>
 #include <limits.h>
-#include <math.h>
+// #include <math.h>
 #include <sstream>
 #include <stdlib.h>
 #include <string>
+#include <sys/time.h>
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
@@ -27,9 +28,7 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
+// #include <time.h>
 
 #pragma hd_warning_disable
 
@@ -149,7 +148,6 @@ struct centr_sum_functor {
   }
 };
 
-
 struct NotEqual {
   __host__ __device__ int operator()(thrust::tuple<int, int> t) const {
     return thrust::get<0>(t) != thrust::get<1>(t) ? 1 : 0;
@@ -185,33 +183,33 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
-        thrust::reduce_by_key(
-            // keys: 0...0 1...1 ... k*n*N
-            thrust::make_transform_iterator(
-                thrust::make_counting_iterator<int>(0),
-                dkeygen(n, N)), // begining of input key range
-            thrust::make_transform_iterator(
-                thrust::make_counting_iterator<int>(n * N * k),
-                dkeygen(n, N)), // end of input key range
-            thrust::make_transform_iterator(
-                thrust::make_zip_iterator( // begining of values range - tu
-                                           // chcemy miec odleglosci
-                    thrust::make_tuple(
-                        thrust::make_permutation_iterator(
-                            d_centr.begin(),
-                            thrust::make_transform_iterator(
-                                thrust::make_counting_iterator<int>(0),
-                                d_idx(n, k))),
-                        thrust::make_permutation_iterator(
-                            d_data.begin(),
-                            thrust::make_transform_iterator(
-                                thrust::make_counting_iterator<int>(0),
-                                c_idx(n, k))))),
-                my_dist()),
-            thrust::make_discard_iterator(), // keys output (nie potrzebujemy
-                                             // tego)
-            values_out.begin()               // values output - wynik
-        );
+    thrust::reduce_by_key(
+        // keys: 0...0 1...1 ... k*n*N
+        thrust::make_transform_iterator(
+            thrust::make_counting_iterator<int>(0),
+            dkeygen(n, N)), // begining of input key range
+        thrust::make_transform_iterator(
+            thrust::make_counting_iterator<int>(n * N * k),
+            dkeygen(n, N)), // end of input key range
+        thrust::make_transform_iterator(
+            thrust::make_zip_iterator( // begining of values range - tu
+                                       // chcemy miec odleglosci
+                thrust::make_tuple(
+                    thrust::make_permutation_iterator(
+                        d_centr.begin(),
+                        thrust::make_transform_iterator(
+                            thrust::make_counting_iterator<int>(0),
+                            d_idx(n, k))),
+                    thrust::make_permutation_iterator(
+                        d_data.begin(),
+                        thrust::make_transform_iterator(
+                            thrust::make_counting_iterator<int>(0),
+                            c_idx(n, k))))),
+            my_dist()),
+        thrust::make_discard_iterator(), // keys output (nie potrzebujemy
+                                         // tego)
+        values_out.begin()               // values output - wynik
+    );
 
     thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
                       my_sqrt());
@@ -246,21 +244,17 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
             thrust::make_tuple(old_d_clusters.end(), d_clusters.end())),
         NotEqual(), 0, thrust::plus<int>());
 
-
-  thrust::copy(d_clusters.begin(), d_clusters.end(),
-             old_d_clusters.begin());
+    thrust::copy(d_clusters.begin(), d_clusters.end(), old_d_clusters.begin());
 
     thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
-  
     // Oblicz liczbę wystąpień każdego klastra
     thrust::reduce_by_key(d_clusters.begin(), d_clusters.end(),
                           thrust::make_constant_iterator(1),
                           thrust::make_discard_iterator(), clusterSizes.begin(),
                           thrust::equal_to<int>(), thrust::plus<int>());
 
- 
     thrust::fill(d_centr.begin(), d_centr.end(), 0.0);
     thrust::exclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                            data_starts.begin());
@@ -297,7 +291,7 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
   }
 
   compute_time = dtime_usec(compute_time);
-  std::cout<<"Iterations:"<< numIters<<'\n';
+  std::cout << "Iterations:" << numIters << '\n';
   std::cout << "\n Centroids:\n";
   thrust::copy_n(d_centr.begin(), d_centr.end(),
                  std::ostream_iterator<float>(std::cout, ", "));
@@ -306,21 +300,21 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
   return compute_time;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
+  // file validation
   std::string inFile = "";
-    if( argc == 2 ) {
-      inFile = argv[1];
-    }
-    else {
-      std::cout << "Usage: ./cufile InputFile \n";
-      return 1;
-    }
+  if (argc == 2) {
+    inFile = argv[1];
+  } else {
+    std::cout << "Usage: ./cufile InputFile \n";
+    return 1;
+  }
   std::ifstream inputFile;
   inputFile.open(inFile.c_str(), std::ios::in);
   if (!inputFile.is_open()) {
-        std::cout << "Error opening file: " << inFile << std::endl;
-        return 1;
-    }
+    std::cout << "Error opening file: " << inFile << std::endl;
+    return 1;
+  }
   std::string inputString;
   getline(inputFile, inputString);
   long N = atoi(inputString.c_str()); // real A height, real C height
