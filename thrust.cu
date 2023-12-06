@@ -445,13 +445,13 @@ int main(int argc, char **argv) {
   std::cout << "Elapsed Time [Full algorithm + time measurement] = "
             << elapsedTime << " milliseconds\n";
 
-  std::cout << "Data:\n";
-  for (int i = 0; i < N; ++i) {
-    for (int j = 0; j < n; ++j) {
-      std::cout << data[i * n + j] << ' ';
-    }
-    std::cout << clusters[i] << '\n';
-  }
+  // std::cout << "Data:\n";
+  // for (int i = 0; i < N; ++i) {
+  //   for (int j = 0; j < n; ++j) {
+  //     std::cout << data[i * n + j] << ' ';
+  //   }
+  //   std::cout << clusters[i] << '\n';
+  // }
 
   delete[] data;
   delete[] centroids;

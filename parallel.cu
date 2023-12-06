@@ -335,6 +335,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
+    // distances calculation
     cudaEventRecord(startStage, 0);
     CalculateDistances<<<dimGrid, dimBlock>>>(
         d_A, d_B,
@@ -344,10 +345,12 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeCalcDist += tmpTime;
 
+    // memory reseting
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
 
+    // nearest centroid searching
     cudaEventRecord(startStage, 0);
     MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
     cudaEventRecord(stopStage, 0);
@@ -355,6 +358,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeFindMin += tmpTime;
 
+    // cluster changes counting
     cudaEventRecord(startStage, 0);
     CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_newassignments, d_assignments, N, d_changes);
@@ -363,6 +367,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComapreArrays += tmpTime;
 
+    // new centorids computation
     cudaEventRecord(startStage, 0);
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
@@ -435,6 +440,7 @@ int main(int argc, char **argv) {
             << " milliseconds\n";
   inputFile.close();
 
+  // CPU - GPU copying
   cudaEventRecord(start, 0);
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
   cudaEventRecord(stop, 0);
@@ -461,13 +467,13 @@ int main(int argc, char **argv) {
     }
     std::cout << std::endl;
   }
-  std::cout<<"Points:\n";
-  for(int i=0; i<A.realHeight; ++i){
-    for(int j=0; j<A.realWidth; ++j){
-      std::cout<<GetElement(A,  i,  j)<<" ";
-    }
-    std::cout<<clusters[i]<<'\n';
-  }
+  // std::cout<<"Points:\n";
+  // for(int i=0; i<A.realHeight; ++i){
+  //   for(int j=0; j<A.realWidth; ++j){
+  //     std::cout<<GetElement(A,  i,  j)<<" ";
+  //   }
+  //   std::cout<<clusters[i]<<'\n';
+  // }
 
   // memory deallocation
   delete[] A.elements;
