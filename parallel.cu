@@ -437,7 +437,7 @@ int main(int argc, char** argv) {
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, &start, &stop);
+  cudaEventElapsedTime(&elapsedTime, start, stop);
   std::cout<<"Elapsed Time [CPU - GPU copying] = "<<elapsedTime<<" milliseconds\n";
 
   // K-means clusterization
