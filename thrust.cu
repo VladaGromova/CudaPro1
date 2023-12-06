@@ -335,13 +335,23 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  float *data;// = new float[N * n];
-  float *centroids;// = new float[k * n];
+  float *data;
+  float *centroids;
   int *clusters;
   int N, n, k;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  float elapsedTime;
 
   //read data from file
+  cudaEventRecord(start, 0);
   readFile(inputFile, N, n, k, data, centroids);
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime, start, stop);
+  std::cout << "\nElapsed Time [Data reading] = " << elapsedTime
+            << " milliseconds\n";
   inputFile.close();
 
   eucl_dist_thrust(data, centroids, clusters, k, n, N, 1);
@@ -354,5 +364,10 @@ int main(int argc, char **argv) {
     std::cout<<clusters[i]<<'\n';
   }
 
+  delete[] data;
+  delete[] centroids;
+  delete[] clusters;
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
   return 0;
 }
