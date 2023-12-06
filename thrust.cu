@@ -154,14 +154,9 @@ struct NotEqual {
   }
 };
 
-unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
-                                    thrust::host_vector<float> &data,
-                                    thrust::host_vector<float> &dist,*/
-                                    float *&data, float *&cs, int *&clstrs,
+unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
                                     int k, int n, int N, int print) {
 
-  // thrust::device_vector<float> d_data = data;
-  // thrust::device_vector<float> d_centr = cs;
   thrust::device_vector<float> d_data(data, data + n*N);
   thrust::device_vector<float> d_centr(cs, cs + n*k);
   thrust::device_vector<float> values_out(k * N);
@@ -187,7 +182,7 @@ unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
     thrust::reduce_by_key(
-        // keys: 0...0 1...1 ... k*n*N
+        // keys: 0...0 1...1 ... k*N
         thrust::make_transform_iterator(
             thrust::make_counting_iterator<int>(0),
             dkeygen(n, N)), // begining of input key range
@@ -217,9 +212,6 @@ unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
     thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
                       my_sqrt());
     cudaDeviceSynchronize();
-    
-    //thrust::copy(values_out.begin(), values_out.end(), dist.begin());
-
     int numColumns = k; // Number of columns
 
     // Perform reduction to find minimum value and its position for each row
@@ -298,12 +290,33 @@ unsigned long long eucl_dist_thrust(/*thrust::host_vector<float> &cs,
 
   compute_time = dtime_usec(compute_time);
   std::cout << "Iterations:" << numIters << '\n';
-  // std::cout << "\n Centroids:\n";
-  // thrust::copy_n(d_centr.begin(), d_centr.end(),
-  //                std::ostream_iterator<float>(std::cout, ", "));
-  // std::cout << std::endl;
-
   return compute_time;
+}
+
+void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data, float *&centroids) {
+  std::string inputString;
+  getline(inputFile, inputString);
+  N = atoi(inputString.c_str()); // real A height, real C height
+  getline(inputFile, inputString);
+  n = atoi(inputString.c_str()); // real A width, real B height
+  getline(inputFile, inputString);
+  k = atoi(inputString.c_str()); // real B width, real C width
+
+  data = new float[N * n];
+  centroids = new float[k * n];
+  float value = 0.0f;
+  int ind = 0;
+  while (getline(inputFile, inputString)) {
+    std::istringstream iss(inputString);
+    value = 0.0f;
+    while (iss >> value) {
+      data[ind] = value;
+      if (ind < k * n) {
+        centroids[ind] = value;
+      }
+      ++ind;
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -321,37 +334,16 @@ int main(int argc, char **argv) {
     std::cout << "Error opening file: " << inFile << std::endl;
     return 1;
   }
-  std::string inputString;
-  getline(inputFile, inputString);
-  long N = atoi(inputString.c_str()); // real A height, real C height
-  getline(inputFile, inputString);
-  int n = atoi(inputString.c_str()); // real A width, real B height
-  getline(inputFile, inputString);
-  int k = atoi(inputString.c_str()); // real B width, real C width
 
-  float *data = new float[N * n];
-  float *centroids = new float[k * n];
+  float *data;// = new float[N * n];
+  float *centroids;// = new float[k * n];
   int *clusters;
+  int N, int n, int k;
 
-  float value = 0.0f;
-  int ind = 0;
-  while (getline(inputFile, inputString)) {
-    std::istringstream iss(inputString);
-    value = 0.0f;
-    while (iss >> value) {
-      data[ind] = value;
-      if (ind < k * n) {
-        centroids[ind] = value;
-      }
-      ++ind;
-    }
-  }
+  //read data from file
+  readFile(inputFile, N, n, k, data, centroids);
   inputFile.close();
 
-  // thrust::host_vector<float> h_data(data, data + N * n);
-  // thrust::host_vector<float> h_centr(centroids, centroids + k * n);
-  // thrust::host_vector<float> h_dist(k * N);
-  //eucl_dist_thrust(h_centr, h_data, h_dist, k, n, N, 1);
   eucl_dist_thrust(data, centroids, clusters, k, n, N, 1);
 
   std::cout<<"Data:\n";
