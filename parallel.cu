@@ -459,8 +459,14 @@ int main(int argc, char **argv) {
     for (int j = 0; j < B.realHeight; ++j) {
       std::cout << GetElement(B, j, i) << " ";
     }
-    std::cout<<clusters[i];
     std::cout << std::endl;
+  }
+
+  for(int i=0; i<A.realHeight; ++i){
+    for(int j=0; j<A.realWidth; ++j){
+      std::cout<<GetElement(A, int i, int j)<<" ";
+    }
+    std::cout<<clusters[i]<<'\n';
   }
 
   delete[] A.elements;
