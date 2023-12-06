@@ -275,7 +275,7 @@ void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
 }
 
-void defineArray(int*& assignments, int*& d_assignments){ 
+void defineArray(int*& assignments, int*& d_assignments, int& N){ 
   assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
   cudaMalloc(&d_assignments, N * sizeof(int));
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
   //            cudaMemcpyHostToDevice);
    int *assignments;
   int *d_assignments;
-  defineArray(assignments, d_assignments);
+  defineArray(assignments, d_assignments, N);
 
   int *newassignments = new int[N];
   std::fill(newassignments, newassignments + N, 0);
