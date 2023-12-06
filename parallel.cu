@@ -377,6 +377,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
 
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_B, d_numOfVectorsInClusters, k, n);
     cudaEventRecord(stopStage, 0);
