@@ -18,17 +18,17 @@ OUTPUT_CU_2 = thrust_cu
 
 # Compilation rule for .cpp file
 $(OUTPUT_CPP): $(CPP_FILE)
-    $(CXX) -o $(OUTPUT_CPP) $(CPP_FILE)
+	$(CXX) -o $(OUTPUT_CPP) $(CPP_FILE)
 
 # Compilation rule for first .cu file
 $(OUTPUT_CU_1): $(CU_FILE_1)
-    $(NVCC) -o $(OUTPUT_CU_1) $(CU_FILE_1)
+	$(NVCC) -o $(OUTPUT_CU_1) $(CU_FILE_1)
 
 # Compilation rule for second .cu file
 $(OUTPUT_CU_2): $(CU_FILE_2)
-    $(NVCC) -o $(OUTPUT_CU_2) $(CU_FILE_2)
+	$(NVCC) -o $(OUTPUT_CU_2) $(CU_FILE_2)
 
 .PHONY: clean
 
 clean:
-    rm -f $(OUTPUT_CPP) $(OUTPUT_CU_1) $(OUTPUT_CU_2)
+	rm -f $(OUTPUT_CPP) $(OUTPUT_CU_1) $(OUTPUT_CU_2)
