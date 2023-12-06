@@ -7,8 +7,8 @@ CXXFLAGS = -std=c++11 -Wall
 NVCCFLAGS = -arch=sm_75 # Change the architecture according to your GPU
 
 # File names
-CPP_FILE = main.cpp
-CU_FILES = kernel1.cu kernel2.cu
+CPP_FILE = seq.cpp
+CU_FILES = parallel.cu thrust.cu
 
 # Output file name
 OUTPUT = executable_name
