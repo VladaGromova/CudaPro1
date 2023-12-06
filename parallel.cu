@@ -110,7 +110,7 @@ void InitializeMatrix(Matrix &mat, int width, int height, int realWidth,
   }
 }
 
-InitializeDeviceMatrices(Matrix &A, Matrix &B, Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C){
+void InitializeDeviceMatrices(Matrix &A, Matrix &B, Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C){
   d_A.width = d_A.stride = A.width;
   d_A.height = A.height;
   d_A.realWidth = A.realWidth;
