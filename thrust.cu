@@ -154,7 +154,7 @@ struct NotEqual {
   }
 };
 
-void calculateDistances(int& n, int& N. int& k, thrust::device_vector<float>& d_data, thrust::device_vector<float>& d_centr,
+void calculateDistances(int& n, int& N, int& k, thrust::device_vector<float>& d_data, thrust::device_vector<float>& d_centr,
                         thrust::device_vector<float>& values_out){
    thrust::reduce_by_key(
         // keys: 0...0 1...1 ... k*N
@@ -207,9 +207,9 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
   thrust::device_vector<bool> docopy(N * n);
   thrust::device_vector<float> fcol_sums(n);
   cudaEvent_t start, stop;
-  // cudaEventCreate(&start);
-  // cudaEventCreate(&stop);
-  // float elapsedTime;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  float elapsedTime;
   // int *assignments, *d_assignments, *newassignments, *d_newassignments,
   //     *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   // float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
@@ -231,7 +231,7 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
-    calculateDistances(n, N, k, );
+    calculateDistances(n, N, k, d_data, d_centr, values_out);
    
     thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
                       my_sqrt());
