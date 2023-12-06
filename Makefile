@@ -3,7 +3,7 @@ CXX = g++
 NVCC = nvcc
 
 # Flags
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++11
 # NVCCFLAGS = -arch=sm_75 # Change the architecture according to your GPU
 
 # File names
