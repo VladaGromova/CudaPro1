@@ -16,9 +16,9 @@
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
-// #define MAX_THREADS_IN_BLOCK 512
+#define MAX_THREADS_IN_BLOCK 512
 
-#define MAX_THREADS_IN_BLOCK 16
+//#define MAX_THREADS_IN_BLOCK 16
 
 typedef struct {
   int width;
@@ -29,7 +29,7 @@ typedef struct {
   float *elements;
 } Matrix;
 
-__device__ float GetElement(const Matrix A, int row, int col) {
+__host__ __device__ float GetElement(const Matrix A, int row, int col) {
   return A.elements[row * A.stride + col];
 }
 
@@ -37,9 +37,9 @@ __device__ void SetElement(Matrix A, int row, int col, float value) {
   A.elements[row * A.stride + col] = value;
 }
 
-float GetElementCPU(const Matrix A, int row, int col) {
-  return A.elements[row * A.stride + col];
-}
+// float GetElementCPU(const Matrix A, int row, int col) {
+//   return A.elements[row * A.stride + col];
+// }
 
 void SetElementCPU(Matrix A, int row, int col, float value) {
   A.elements[row * A.stride + col] = value;
@@ -365,7 +365,8 @@ int main(int argc, char** argv) {
   std::cout << "Centroids:" << std::endl;
   for (int i = 0; i < B.realHeight; ++i) {
     for (int j = 0; j < B.realWidth; ++j) {
-      std::cout << GetElementCPU(B, i, j) << " ";
+      //std::cout << GetElementCPU(B, i, j) << " ";
+      std::cout << GetElement(B, i, j) << " ";
     }
     std::cout << std::endl;
   }
