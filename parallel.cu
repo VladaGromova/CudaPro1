@@ -298,32 +298,32 @@ void defineArrays(int& N, int& k, int*& assignments, int*& d_assignments, int*& 
   cudaMemset(d_changes, 0, sizeof(int));
 }
 
-void freeMemory(Matrix& A, Matrix& B, Matrix& C,
-               int* assignments,int* newassignments,int* numOfVectorsInClusters, 
-               Matrix& d_A, Matrix& d_B, Matrix& d_C,
-               int* d_assignments,int* d_newassignments,int* d_numOfVectorsInClusters,int* d_changes){
-  delete[] A.elements;
-  delete[] B.elements;
-  delete[] C.elements;
-  delete[] assignments;
-  delete[] newassignments;
-  delete[] numOfVectorsInClusters;
-  cudaFree(d_A.elements);
-  cudaFree(d_B.elements);
-  cudaFree(d_C.elements);
-  cudaFree(d_assignments);
-  cudaFree(d_newassignments);
-  cudaFree(d_numOfVectorsInClusters);
-  cudaFree(d_changes);
-}
+// void freeMemory(Matrix& A, Matrix& B, Matrix& C,
+//                int* assignments,int* newassignments,int* numOfVectorsInClusters, 
+//                Matrix& d_A, Matrix& d_B, Matrix& d_C,
+//                int* d_assignments,int* d_newassignments,int* d_numOfVectorsInClusters,int* d_changes){
+//   delete[] A.elements;
+//   delete[] B.elements;
+//   delete[] C.elements;
+//   delete[] assignments;
+//   delete[] newassignments;
+//   delete[] numOfVectorsInClusters;
+//   cudaFree(d_A.elements);
+//   cudaFree(d_B.elements);
+//   cudaFree(d_C.elements);
+//   cudaFree(d_assignments);
+//   cudaFree(d_newassignments);
+//   cudaFree(d_numOfVectorsInClusters);
+//   cudaFree(d_changes);
+// }
 
 
-KMeansClusterization(int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C, Matrix& d_A, Matrix& d_B, Matrix& d_C){
+void KMeansClusterization(int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C, Matrix& d_A, Matrix& d_B, Matrix& d_C){
   cudaEvent_t  startStage, stopStage;
   int numIters = 0; // number of iterations
   int changes = INT_MAX; // number of vectors that changed cluster during last iteration
   int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
-  float elapsedTimeFullAlgoritm, tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0, elapsedTimeComapreArrays = 0.0, elapsedTimeComputeAverage = 0.0;
+  float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0, elapsedTimeComapreArrays = 0.0, elapsedTimeComputeAverage = 0.0;
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
@@ -335,7 +335,7 @@ KMeansClusterization(int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C, Ma
   defineArrays(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters, d_changes);
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
-  
+
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
@@ -382,13 +382,21 @@ KMeansClusterization(int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C, Ma
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
     ++numIters;
   }
+  std::cout<<"Iterations:"<< numIters<<'\n';
   std::cout<<"Elapsed Time [Distance calculation stage] = "<<elapsedTimeCalcDist<<" milliseconds\n";
   std::cout<<"Elapsed Time [Finding minimum stage] = "<<elapsedTimeFindMin<<" milliseconds\n";
   std::cout<<"Elapsed Time [Array comparing stage] = "<<elapsedTimeComapreArrays<<" milliseconds\n";
   std::cout<<"Elapsed Time [Computing average stage] = "<<elapsedTimeComputeAverage<<" milliseconds\n";   
   
   cudaEventDestroy(startStage);
-  cudaEventDestroy(stopStage);               
+  cudaEventDestroy(stopStage); 
+  delete[] assignments;
+  delete[] newassignments;
+  delete[] numOfVectorsInClusters;
+  cudaFree(d_assignments);
+  cudaFree(d_newassignments);
+  cudaFree(d_numOfVectorsInClusters);
+  cudaFree(d_changes);              
 }
 
 int main(int argc, char** argv) {
@@ -425,26 +433,23 @@ int main(int argc, char** argv) {
   std::cout<<"\nElapsed Time [Data reading] = "<<elapsedTime<<" milliseconds\n";
   inputFile.close();
 
-  cudaEventRecord(&start,0);
+  cudaEventRecord(start,0);
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
-  cudaEventRecord(&stop,0);
-  cudaEventSynchronize(&stop);
+  cudaEventRecord(stop,0);
+  cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime, &start, &stop);
   std::cout<<"Elapsed Time [CPU - GPU copying] = "<<elapsedTime<<" milliseconds\n";
 
   // K-means clusterization
-  cudaEventRecord(&start,0);
+  cudaEventRecord(start,0);
   KMeansClusterization(N, n, k, A, B, C, d_A, d_B, d_C);
-  cudaEventRecord(&stop,0);
+  cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime,start,stop);
-  std::cout<<"Elapsed Time [Full algorithm + time measurement] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
-
-
+  std::cout<<"Elapsed Time [Full algorithm + time measurement] = "<<elapsedTime<<" milliseconds\n";
 
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
-  std::cout<<"Iterations:"<< numIters<<'\n';
   std::cout << "Centroids:" << std::endl;
   for (int i = 0; i < B.realHeight; ++i) {
     for (int j = 0; j < B.realWidth; ++j) {
@@ -453,7 +458,13 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
   }
   
-  freeMemory(A, B, C, assignments, newassignments, numOfVectorsInClusters, d_A, d_B, d_C, d_assignments, d_newassignments, d_numOfVectorsInClusters, d_changes);
+   delete[] A.elements;
+  delete[] B.elements;
+  delete[] C.elements;
+  cudaFree(d_A.elements);
+  cudaFree(d_B.elements);
+  cudaFree(d_C.elements);
+  //freeMemory(A, B, C, /*assignments, newassignments, numOfVectorsInClusters,*/ d_A, d_B, d_C, d_assignments, d_newassignments, d_numOfVectorsInClusters, d_changes);
   cudaEventDestroy(start); 
   cudaEventDestroy(stop);
   return 0;
