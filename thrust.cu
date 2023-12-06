@@ -251,6 +251,9 @@ unsigned long long eucl_dist_thrust(thrust::host_vector<float> &cs,
                  std::ostream_iterator<int>(std::cout, ", "));
   std::cout << std::endl;
 
+  thrust::copy(d_clusters.begin(), d_clusters.end(),
+             old_d_clusters.begin());
+
     thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
