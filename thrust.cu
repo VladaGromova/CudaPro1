@@ -353,6 +353,8 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeCalcDist += tmpTime;
 
+
+    std::cout<<"Iteration nr: "<<numIters<<'\n';
     // nearest centroid searching
     cudaEventRecord(start, 0);
     findNearestCentroid(k, N, d_centr, values_out, mins, V2, d_clusters);
@@ -361,6 +363,8 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     cudaEventElapsedTime(&tmpTime, start, stop);
     elapsedTimeFindMin += tmpTime;
 
+
+    std::cout<<"Iteration nr: "<<numIters<<'\n';
     // cluster changes counting
     cudaEventRecord(start, 0);
     countClusterChanges(delta, old_d_clusters, d_clusters);
@@ -372,6 +376,8 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     thrust::copy(d_clusters.begin(), d_clusters.end(),
                  old_d_clusters.begin()); // preprocessing
 
+
+    std::cout<<"Iteration nr: "<<numIters<<'\n';
     // new centorids computation
     cudaEventRecord(start, 0);
     findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters,
