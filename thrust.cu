@@ -327,8 +327,6 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
   float elapsedTime;
-  int *assignments, *d_assignments, *newassignments, *d_newassignments,
-      *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
                  elapsedTimeComapreArrays = 0.0,
                  elapsedTimeComputeAverage = 0.0;
