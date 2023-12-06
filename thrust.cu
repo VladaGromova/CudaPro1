@@ -253,7 +253,7 @@ void findNewCentroids(int &n, int &N, int &k,
     actual_indices.resize(clusterSizes[i]);
     thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i],
                  actual_indices.begin());
-    std::cout << "test for\n";
+    
     thrust::binary_search(
         actual_indices.begin(), actual_indices.end(),
         thrust::make_transform_iterator(thrust::make_counting_iterator(0),
@@ -262,25 +262,24 @@ void findNewCentroids(int &n, int &N, int &k,
                                         div_functor(n)) +
             N * n,
         docopy.begin());
-    std::cout << "test for\n";
-    // HERE IS ERROR
+  
     thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(),
                     vectorsInCluster.begin(), is_true());
-    std::cout << "test for\n";
+    
     thrust::sequence(fcol_sums.begin(), fcol_sums.end());
-    std::cout << "test for\n";
+    
     thrust::transform(
         fcol_sums.begin(), fcol_sums.end(), d_centr.begin() + i * n,
         centr_sum_functor(clusterSizes[i], n,
                           thrust::raw_pointer_cast(vectorsInCluster.data())));
-    std::cout << "test for\n";
+    
     //cudaDeviceSynchronize();
     thrust::transform(d_centr.begin() + i * n, d_centr.begin() + (i + 1) * n,
                       thrust::make_constant_iterator(clusterSizes[i]),
                       d_centr.begin() + i * n, thrust::divides<float>());
-    std::cout << "test for\n";
+    
   }
-  std::cout << "test\n";
+  
 }
 
 void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
@@ -473,13 +472,13 @@ int main(int argc, char **argv) {
   std::cout << "Elapsed Time [Full algorithm + time measurement] = "
             << elapsedTime << " milliseconds\n";
 
-  std::cout << "points and clusters:\n";
-  for (int i = 0; i < N; ++i) {
-    for (int j = 0; j < n; ++j) {
-      std::cout << data[i * n + j] << ' ';
-    }
-    std::cout << clusters[i] << '\n';
-  }
+  // std::cout << "points and clusters:\n";
+  // for (int i = 0; i < N; ++i) {
+  //   for (int j = 0; j < n; ++j) {
+  //     std::cout << data[i * n + j] << ' ';
+  //   }
+  //   std::cout << clusters[i] << '\n';
+  // }
   writeDataToFile(data, clusters, N, n);
 
   delete[] data;

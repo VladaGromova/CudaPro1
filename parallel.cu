@@ -387,7 +387,6 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
     ++numIters;
   }
-  std::cout<<"It will be cluster copying...\n";
   cudaMemcpy(clusters, d_newassignments, N * sizeof(int),
              cudaMemcpyDeviceToHost);
   std::cout << "Elapsed Time [Distance calculation stage] = "
@@ -489,13 +488,13 @@ int main(int argc, char **argv) {
     }
     std::cout << std::endl;
   }
-  std::cout<<"Points and clusters:\n";
-  for(int i=0; i<A.realHeight; ++i){
-    for(int j=0; j<A.realWidth; ++j){
-      std::cout<<GetElement(A,  i,  j)<<" ";
-    }
-    std::cout<<clusters[i]<<'\n';
-  }
+  // std::cout<<"Points and clusters:\n";
+  // for(int i=0; i<A.realHeight; ++i){
+  //   for(int j=0; j<A.realWidth; ++j){
+  //     std::cout<<GetElement(A,  i,  j)<<" ";
+  //   }
+  //   std::cout<<clusters[i]<<'\n';
+  // }
 
   writeDataToFile(A, clusters, N, n);
 
