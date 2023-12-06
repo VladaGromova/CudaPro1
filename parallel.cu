@@ -17,7 +17,6 @@
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
 #define MAX_THREADS_IN_BLOCK 512
-
 //#define MAX_THREADS_IN_BLOCK 16
 
 typedef struct {
@@ -37,15 +36,7 @@ __host__ __device__ void SetElement(Matrix A, int row, int col, float value) {
   A.elements[row * A.stride + col] = value;
 }
 
-// float GetElementCPU(const Matrix A, int row, int col) {
-//   return A.elements[row * A.stride + col];
-// }
-
-// void SetElementCPU(Matrix A, int row, int col, float value) {
-//   A.elements[row * A.stride + col] = value;
-// }
-
-void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
+void FillMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
                         int realHeightA, Matrix &matB, int widthB, int heightB,
                         int realWidthB, int realHeightB,
                         std::istream &inputFile) {
@@ -53,16 +44,14 @@ void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
   matA.height = heightA;
   matA.realWidth = realWidthA;
   matA.realHeight = realHeightA;
-  matA.stride =
-      widthA; // Assuming a simple row-major layout where stride equals width
+  matA.stride = widthA; // Assuming a row-major layout, stride == width
   matA.elements = new float[widthA * heightA];
 
   matB.width = widthB;
   matB.height = heightB;
   matB.realWidth = realWidthB;
   matB.realHeight = realHeightB;
-  matB.stride =
-      widthB; // Assuming a simple row-major layout where stride equals width
+  matB.stride = widthB; // Assuming a row-major layout, stride == width
   matB.elements = new float[widthB * heightB];
 
   std::string inputString;
@@ -73,10 +62,8 @@ void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
     std::istringstream iss(inputString);
     j = 0;
     while (iss >> value) {
-      //SetElementCPU(matA, i, j, value);
       SetElement(matA, i, j, value);
       if (i < realWidthB) {
-        //SetElementCPU(matB, j, i, value);
         SetElement(matB, j, i, value);
       }
       ++j;
@@ -86,25 +73,21 @@ void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
   value = 0.0f;
   for (i = 0; i < heightA; ++i) {
     for (j = realWidthA; j < widthA; ++j) {
-      //SetElementCPU(matA, i, j, value);
       SetElement(matA, i, j, value);
     }
   }
   for (i = realHeightA; i < heightA; ++i) {
     for (j = 0; j < widthA; ++j) {
-      //SetElementCPU(matA, i, j, value);
       SetElement(matA, i, j, value);
     }
   }
   for (i = 0; i < heightB; ++i) {
     for (j = realWidthB; j < widthB; ++j) {
-      //SetElementCPU(matB, i, j, value);
       SetElement(matB, i, j, value);
     }
   }
   for (i = realHeightB; i < heightB; ++i) {
     for (j = 0; j < widthB; ++j) {
-      //SetElementCPU(matB, i, j, value);
       SetElement(matB, i, j, value);
     }
   }
@@ -117,15 +100,38 @@ void InitializeMatrix(Matrix &mat, int width, int height, int realWidth,
   mat.realWidth = realWidth;
   mat.realHeight = realHeight;
   mat.stride =
-      width; // Assuming a simple row-major layout where stride equals width
+      width; // Assuming a row-major layout, stride == width
   mat.elements = new float[width * height];
   float value = FLT_MAX;
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
-      //SetElementCPU(mat, i, j, value);
       SetElement(mat, i, j, value);
     }
   }
+}
+
+InitializeDeviceMatrices(Matrix &A, Matrix &B, Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C){
+  d_A.width = d_A.stride = A.width;
+  d_A.height = A.height;
+  d_A.realWidth = A.realWidth;
+  d_A.realHeight = d_A.realHeight;
+  d_B.width = d_B.stride = B.width;
+  d_B.height = B.height;
+  d_B.realWidth = B.realWidth;
+  d_B.realHeight = B.realHeight;
+  d_C.width = d_C.stride = C.width;
+  d_C.height = C.height;
+  d_C.realWidth = C.realWidth;
+  d_C.realHeight = C.realHeight;
+  cudaMalloc(&d_A.elements, A.width * A.height * sizeof(float));
+  cudaMemcpy(d_A.elements, A.elements, A.width * A.height * sizeof(float),
+             cudaMemcpyHostToDevice);
+
+  cudaMalloc(&d_B.elements, B.width * B.height * sizeof(float));
+  cudaMemcpy(d_B.elements, B.elements, B.width * B.height * sizeof(float),
+             cudaMemcpyHostToDevice);
+
+  cudaMalloc(&d_C.elements, C.width * C.height * sizeof(float));
 }
 
 __device__ Matrix GetSubMatrix(Matrix A, int row, int col) {
@@ -261,6 +267,8 @@ int main(int argc, char** argv) {
   getline(inputFile, inputString);
   int k = atoi(inputString.c_str()); // real B width, real C width
 
+  // A is N*n, but I want be able to split A into full blocks, so I want the height and the width be divisible by BLOCK_SIZE
+  // Same for B (n*k) and C (N*k)
   int A_width = n;
   int B_height = n;
   int A_height = N;
@@ -276,33 +284,19 @@ int main(int argc, char** argv) {
     B_width += (BLOCK_SIZE - (k % BLOCK_SIZE));
   }
 
-  Matrix A, B, C;
-  InitializeMatrices(A, A_width, A_height, n, N, B, B_width, B_height, k, n,
+  Matrix A, B, C; 
+
+  // Read data into matrices
+  FillMatrices(A, A_width, A_height, n, N, B, B_width, B_height, k, n,
                      inputFile);
-  InitializeMatrix(C, B_width, A_height, k, N);
+  // Matrix A contains dataset: one row - one vektor
+  // Matrix B contains k centroids (first k vectors from dataset): one column - one vector 
+  InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
   inputFile.close();
   Matrix d_A, d_B, d_C;
-  d_A.width = d_A.stride = A.width;
-  d_A.height = A.height;
-  d_A.realWidth = A.realWidth;
-  d_A.realHeight = d_A.realHeight;
-  d_B.width = d_B.stride = B.width;
-  d_B.height = B.height;
-  d_B.realWidth = B.realWidth;
-  d_B.realHeight = B.realHeight;
-  d_C.width = d_C.stride = C.width;
-  d_C.height = C.height;
-  d_C.realWidth = C.realWidth;
-  d_C.realHeight = C.realHeight;
-  cudaMalloc(&d_A.elements, A.width * A.height * sizeof(float));
-  cudaMemcpy(d_A.elements, A.elements, A.width * A.height * sizeof(float),
-             cudaMemcpyHostToDevice);
 
-  cudaMalloc(&d_B.elements, B.width * B.height * sizeof(float));
-  cudaMemcpy(d_B.elements, B.elements, B.width * B.height * sizeof(float),
-             cudaMemcpyHostToDevice);
-
-  cudaMalloc(&d_C.elements, C.width * C.height * sizeof(float));
+  InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
+ 
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
@@ -372,7 +366,6 @@ int main(int argc, char** argv) {
   std::cout << "Centroids:" << std::endl;
   for (int i = 0; i < B.realHeight; ++i) {
     for (int j = 0; j < B.realWidth; ++j) {
-      //std::cout << GetElementCPU(B, i, j) << " ";
       std::cout << GetElement(B, i, j) << " ";
     }
     std::cout << std::endl;
