@@ -33,7 +33,7 @@ __host__ __device__ float GetElement(const Matrix A, int row, int col) {
   return A.elements[row * A.stride + col];
 }
 
-__device__ void SetElement(Matrix A, int row, int col, float value) {
+__host__ __device__ void SetElement(Matrix A, int row, int col, float value) {
   A.elements[row * A.stride + col] = value;
 }
 
@@ -41,9 +41,9 @@ __device__ void SetElement(Matrix A, int row, int col, float value) {
 //   return A.elements[row * A.stride + col];
 // }
 
-void SetElementCPU(Matrix A, int row, int col, float value) {
-  A.elements[row * A.stride + col] = value;
-}
+// void SetElementCPU(Matrix A, int row, int col, float value) {
+//   A.elements[row * A.stride + col] = value;
+// }
 
 void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
                         int realHeightA, Matrix &matB, int widthB, int heightB,
@@ -73,9 +73,11 @@ void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
     std::istringstream iss(inputString);
     j = 0;
     while (iss >> value) {
-      SetElementCPU(matA, i, j, value);
+      //SetElementCPU(matA, i, j, value);
+      SetElement(matA, i, j, value);
       if (i < realWidthB) {
-        SetElementCPU(matB, j, i, value);
+        //SetElementCPU(matB, j, i, value);
+        SetElement(matB, j, i, value);
       }
       ++j;
     }
@@ -84,22 +86,26 @@ void InitializeMatrices(Matrix &matA, int widthA, int heightA, int realWidthA,
   value = 0.0f;
   for (i = 0; i < heightA; ++i) {
     for (j = realWidthA; j < widthA; ++j) {
-      SetElementCPU(matA, i, j, value);
+      //SetElementCPU(matA, i, j, value);
+      SetElement(matA, i, j, value);
     }
   }
   for (i = realHeightA; i < heightA; ++i) {
     for (j = 0; j < widthA; ++j) {
-      SetElementCPU(matA, i, j, value);
+      //SetElementCPU(matA, i, j, value);
+      SetElement(matA, i, j, value);
     }
   }
   for (i = 0; i < heightB; ++i) {
     for (j = realWidthB; j < widthB; ++j) {
-      SetElementCPU(matB, i, j, value);
+      //SetElementCPU(matB, i, j, value);
+      SetElement(matB, i, j, value);
     }
   }
   for (i = realHeightB; i < heightB; ++i) {
     for (j = 0; j < widthB; ++j) {
-      SetElementCPU(matB, i, j, value);
+      //SetElementCPU(matB, i, j, value);
+      SetElement(matB, i, j, value);
     }
   }
 }
@@ -116,7 +122,8 @@ void InitializeMatrix(Matrix &mat, int width, int height, int realWidth,
   float value = FLT_MAX;
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
-      SetElementCPU(mat, i, j, value);
+      //SetElementCPU(mat, i, j, value);
+      SetElement(mat, i, j, value);
     }
   }
 }
