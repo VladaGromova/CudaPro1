@@ -350,12 +350,10 @@ int main(int argc, char** argv) {
   int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   defineArrays(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters, d_changes);
 
-//  int *d_changes;
-
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
-    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C);
+    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C); // C[i,j] - distance between i-th vector and j-th centroid
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
@@ -372,11 +370,11 @@ int main(int argc, char** argv) {
     ++numIters;
 
     // optional
-    cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
-               cudaMemcpyDeviceToHost);
+    // cudaMemcpy(C.elements, d_C.elements, C.width * C.height * sizeof(float),
+    //            cudaMemcpyDeviceToHost);
 
-    cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
-               cudaMemcpyDeviceToHost);
+    // cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
+    //            cudaMemcpyDeviceToHost);
  
   }
 
