@@ -183,6 +183,31 @@ void calculateDistances(int& n, int& N, int& k, thrust::device_vector<float>& d_
                                          // tego)
         values_out.begin()               // values output - wynik
     );
+    
+    thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
+                      my_sqrt());
+}
+
+void findNearestCentroid(int& k, int& N, thrust::device_vector<float>& d_centr,
+                        thrust::device_vector<float>& values_out,
+                        thrust::device_vector<float>& mins,thrust::device_vector<float>&  V2,thrust::device_vector<int>& d_clusters){
+  thrust::reduce_by_key(
+        thrust::make_transform_iterator(
+            thrust::counting_iterator<int>(0),
+            linear_index_to_row_index<int>(k)),
+        thrust::make_transform_iterator(
+            thrust::counting_iterator<int>(k * N),
+            linear_index_to_row_index<int>(k)),
+        thrust::make_zip_iterator(thrust::make_tuple(
+            values_out.begin(), thrust::counting_iterator<int>(0))),
+        thrust::make_discard_iterator(), // Discard keys output
+        thrust::make_zip_iterator(
+            thrust::make_tuple(mins.begin(), d_clusters.begin())),
+        thrust::equal_to<int>(), MinWithIndex());
+
+    thrust::fill(V2.begin(), V2.end(), k);
+    thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(),
+                      d_clusters.begin(), thrust::modulus<int>());
 
 }
 
@@ -231,32 +256,16 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
+
+    // distance calculation
     calculateDistances(n, N, k, d_data, d_centr, values_out);
-   
-    thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
-                      my_sqrt());
     cudaDeviceSynchronize();
-    int numColumns = k; // Number of columns
 
-    // Perform reduction to find minimum value and its position for each row
-    thrust::reduce_by_key(
-        thrust::make_transform_iterator(
-            thrust::counting_iterator<int>(0),
-            linear_index_to_row_index<int>(numColumns)),
-        thrust::make_transform_iterator(
-            thrust::counting_iterator<int>(k * N),
-            linear_index_to_row_index<int>(numColumns)),
-        thrust::make_zip_iterator(thrust::make_tuple(
-            values_out.begin(), thrust::counting_iterator<int>(0))),
-        thrust::make_discard_iterator(), // Discard keys output
-        thrust::make_zip_iterator(
-            thrust::make_tuple(mins.begin(), d_clusters.begin())),
-        thrust::equal_to<int>(), MinWithIndex());
+    // nearest centroid searching
+    findNearestCentroid(k, N, d_centr, values_out, mins, V2, d_clusters);
 
-    thrust::fill(V2.begin(), V2.end(), k);
-    thrust::transform(d_clusters.begin(), d_clusters.end(), V2.begin(),
-                      d_clusters.begin(), thrust::modulus<int>());
 
+    // cluster changes counting
     delta = thrust::transform_reduce(
         thrust::make_zip_iterator(
             thrust::make_tuple(old_d_clusters.begin(), d_clusters.begin())),
