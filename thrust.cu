@@ -154,52 +154,9 @@ struct NotEqual {
   }
 };
 
-unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
-                                    int k, int n, int N, int print) {
-                                      
-  // additional data declaration
-  thrust::device_vector<float> values_out(k * N);
-  int delta = INT_MAX;
-  int numIters = 0;
-  thrust::device_vector<int> d_clusters(N);
-  thrust::device_vector<int> old_d_clusters(N);
-  thrust::fill(d_clusters.begin(), d_clusters.end(), 0);
-  thrust::device_vector<float> mins(N);
-  thrust::device_vector<float> V2(N * k);
-  thrust::device_vector<int> indices(N);
-  thrust::device_vector<int> clusterSizes(k);
-  thrust::device_vector<float> vectorsInCluster(n);
-  thrust::device_vector<float> actual_indices(1);
-  thrust::device_vector<int> data_starts(k);
-  thrust::device_vector<int> data_ends(k);
-  thrust::device_vector<bool> docopy(N * n);
-  thrust::device_vector<float> fcol_sums(n);
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  float elapsedTime;
-  int *assignments, *d_assignments, *newassignments, *d_newassignments,
-      *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
-  float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
-                 elapsedTimeComapreArrays = 0.0,
-                 elapsedTimeComputeAverage = 0.0;
-
-  // CPU - GPU copying
-  cudaEventRecord(start, 0);
-  thrust::device_vector<float> d_data(data, data + n*N);
-  thrust::device_vector<float> d_centr(cs, cs + n*k);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
-            << " milliseconds\n";
-
-
-  unsigned long long compute_time = dtime_usec(0);
-
-  while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
-    delta = 0;
-    thrust::reduce_by_key(
+void calculateDistances(int& n, int& N. int& k, thrust::device_vector<float>& d_data, thrust::device_vector<float>& d_centr,
+                        thrust::device_vector<float>& values_out){
+   thrust::reduce_by_key(
         // keys: 0...0 1...1 ... k*N
         thrust::make_transform_iterator(
             thrust::make_counting_iterator<int>(0),
@@ -227,6 +184,55 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
         values_out.begin()               // values output - wynik
     );
 
+}
+
+unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
+                                    int k, int n, int N, int print) {
+                                      
+  // additional data declaration
+  thrust::device_vector<float> values_out(k * N);
+  int delta = INT_MAX;
+  int numIters = 0;
+  thrust::device_vector<int> d_clusters(N);
+  thrust::device_vector<int> old_d_clusters(N);
+  thrust::fill(d_clusters.begin(), d_clusters.end(), 0);
+  thrust::device_vector<float> mins(N);
+  thrust::device_vector<float> V2(N * k);
+  thrust::device_vector<int> indices(N);
+  thrust::device_vector<int> clusterSizes(k);
+  thrust::device_vector<float> vectorsInCluster(n);
+  thrust::device_vector<float> actual_indices(1);
+  thrust::device_vector<int> data_starts(k);
+  thrust::device_vector<int> data_ends(k);
+  thrust::device_vector<bool> docopy(N * n);
+  thrust::device_vector<float> fcol_sums(n);
+  cudaEvent_t start, stop;
+  // cudaEventCreate(&start);
+  // cudaEventCreate(&stop);
+  // float elapsedTime;
+  // int *assignments, *d_assignments, *newassignments, *d_newassignments,
+  //     *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
+  // float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
+  //                elapsedTimeComapreArrays = 0.0,
+  //                elapsedTimeComputeAverage = 0.0;
+
+  // CPU - GPU copying
+  cudaEventRecord(start, 0);
+  thrust::device_vector<float> d_data(data, data + n*N);
+  thrust::device_vector<float> d_centr(cs, cs + n*k);
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime, start, stop);
+  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
+            << " milliseconds\n";
+
+
+  unsigned long long compute_time = dtime_usec(0);
+
+  while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
+    delta = 0;
+    calculateDistances(n, N, k, );
+   
     thrust::transform(values_out.begin(), values_out.end(), values_out.begin(),
                       my_sqrt());
     cudaDeviceSynchronize();
