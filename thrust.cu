@@ -411,20 +411,20 @@ void eucl_dist_thrust(float *&data, float *&cs, int *&clstrs, int k, int n,
   cudaEventDestroy(stop);
 }
 
-void writeDataToFile(const std::string& filename, const int* data, const int* clusters, int N, int n) {
-    std::ofstream outputFile(filename); // Open the file for writing (will overwrite existing file)
-
+void writeDataToFile(float* data, const int* clusters, int N, int n) {
+    std::ofstream outputFile;
+    outputFile.open("out_thrust.txt");
     if (outputFile.is_open()) {
         for (int i = 0; i < N; ++i) {
             for (int j = 0; j < n; ++j) {
-                outputFile << data[i * n + j] << ' ';
+                outputFile << data[i*n + j] << ' ';
             }
             outputFile << clusters[i] << '\n';
         }
         outputFile.close();
-        std::cout << "Data written to " << filename << " successfully." << std::endl;
+        std::cout << "Data written successfully \n" << std::endl;
     } else {
-        std::cout << "Unable to open the file: " << filename << std::endl;
+        std::cout << "Unable to open the file \n"<< std::endl;
     }
 }
 
@@ -480,8 +480,7 @@ int main(int argc, char **argv) {
     }
     std::cout << clusters[i] << '\n';
   }
-  std::string filename = "output_thrust.txt"; // Change the filename as needed
-  writeDataToFile(filename, data, clusters, N, n);
+  writeDataToFile(data, clusters, N, n);
 
   delete[] data;
   delete[] centroids;

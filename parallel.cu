@@ -411,7 +411,6 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
 }
 
 void writeDataToFile(Matrix data, const int* clusters, int N, int n) {
-    //std::ofstream outputFile(filename); // Open the file for writing (will overwrite existing file)
     std::ofstream outputFile;
     outputFile.open("out_parallel.txt");
     if (outputFile.is_open()) {
