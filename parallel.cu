@@ -242,7 +242,11 @@ int main(int argc, char** argv) {
       return 1;
     }
   std::ifstream inputFile();
-  inputFile.open(inFile.c_str(), ios::in);
+  inputFile.open(inFile.c_str(), std::ios::in);
+  if (!inputFile.is_open()) {
+        std::cout << "Error opening file: " << inFile << std::endl;
+        return 1;
+    }
   std::string inputString;
   getline(inputFile, inputString);
   int N = atoi(inputString.c_str()); // real A height, real C height
