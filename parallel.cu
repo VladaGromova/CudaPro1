@@ -144,7 +144,7 @@ __device__ Matrix GetSubMatrix(Matrix A, int row, int col) {
 }
 
 __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C,
-                                   unsigned long long *time) {
+                                   /*unsigned long long *time*/) {
 
   int blockRow = blockIdx.y;
   int blockCol = blockIdx.x;
@@ -153,7 +153,7 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C,
   int row = threadIdx.y;
   int col = threadIdx.x;
 
-  unsigned long long startTime = clock();
+ // unsigned long long startTime = clock();
   for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
     Matrix Asub = GetSubMatrix(A, blockRow, m);
     Matrix Bsub = GetSubMatrix(B, m, blockCol);
@@ -170,8 +170,8 @@ __global__ void CalculateDistances(Matrix A, Matrix B, Matrix C,
   if (fabs(GetElement(Csub, row, col) - FLT_MAX) > EPS) {
     SetElement(Csub, row, col, sqrt(Cvalue));
   }
-  unsigned long long finishTime = clock();
-  *time = (finishTime - startTime);
+  //unsigned long long finishTime = clock();
+  //*time = (finishTime - startTime);
 }
 
 __global__ void MinInEachRow(Matrix C, int *result) {
@@ -318,16 +318,16 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime,start,stop);
-  std::cout<<"\n[CPU - GPU copying] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
+  std::cout<<"[CPU - GPU copying] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
 
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
                (int)ceil((double)A.height / (double)dimBlock.y));
 
-  unsigned long long time;
-  unsigned long long *d_time;
-  cudaMalloc(&d_time, sizeof(unsigned long long));
+  // unsigned long long time;
+  // unsigned long long *d_time;
+  // cudaMalloc(&d_time, sizeof(unsigned long long));
 
   int *assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
-    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, d_time);
+    CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C /*, d_time*/);
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
@@ -395,8 +395,8 @@ int main(int argc, char** argv) {
   }
   
 
-  cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
-  std::cout << "Time: " << time << '\n';
+  //cudaMemcpy(&time, d_time, sizeof(unsigned long long), cudaMemcpyDeviceToHost);
+  //std::cout << "Time: " << time << '\n';
 
   delete[] A.elements;
   delete[] B.elements;
@@ -411,7 +411,7 @@ int main(int argc, char** argv) {
   cudaFree(d_newassignments);
   cudaFree(d_numOfVectorsInClusters);
   cudaFree(d_changes);
-  cudaFree(d_time);
+  //cudaFree(d_time);
   std::cout << "Bye!\n";
   return 0;
 }
