@@ -385,8 +385,19 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComputeAverage += tmpTime;
 
-    cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
+    // cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
+    //            cudaMemcpyDeviceToDevice);
+                cudaError_t ret; 
+    ret = cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
                cudaMemcpyDeviceToDevice);
+    if(ret == cudaErrorInvalidValue)
+        printf("1!\n"); 
+    else if(ret == cudaErrorInvalidDevicePointer)
+        printf("2!\n"); 
+    else if(ret == cudaErrorInvalidMemcpyDirection)
+        printf("3!\n"); 
+
+
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
     ++numIters;
   }
