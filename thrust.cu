@@ -274,7 +274,7 @@ void findNewCentroids(int &n, int &N, int &k,
         centr_sum_functor(clusterSizes[i], n,
                           thrust::raw_pointer_cast(vectorsInCluster.data())));
     std::cout << "test for\n";
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
     thrust::transform(d_centr.begin() + i * n, d_centr.begin() + (i + 1) * n,
                       thrust::make_constant_iterator(clusterSizes[i]),
                       d_centr.begin() + i * n, thrust::divides<float>());
