@@ -381,8 +381,6 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComputeAverage += tmpTime;
 
-    // cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
-    //            cudaMemcpyDeviceToDevice);
     cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
                      cudaMemcpyDeviceToDevice);
 
@@ -474,13 +472,13 @@ int main(int argc, char **argv) {
     }
     std::cout << std::endl;
   }
-  // std::cout<<"Points:\n";
-  // for(int i=0; i<A.realHeight; ++i){
-  //   for(int j=0; j<A.realWidth; ++j){
-  //     std::cout<<GetElement(A,  i,  j)<<" ";
-  //   }
-  //   std::cout<<clusters[i]<<'\n';
-  // }
+  std::cout<<"Points and clusters:\n";
+  for(int i=0; i<A.realHeight; ++i){
+    for(int j=0; j<A.realWidth; ++j){
+      std::cout<<GetElement(A,  i,  j)<<" ";
+    }
+    std::cout<<clusters[i]<<'\n';
+  }
 
   // memory deallocation
   delete[] A.elements;
