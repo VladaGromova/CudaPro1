@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
   // numOfVectorsInClusters (size k): numOfVectorsInClusters[i] == number of vectors in i-th cluster 
   int numIters = 0; // number of iterations
   int changes = INT_MAX; // number of vectors that changed cluster during last iteration
-  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, d_changes;
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   defineArrays(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters, d_changes);
 
 //  int *d_changes;
