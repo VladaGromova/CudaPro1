@@ -224,7 +224,7 @@ delta = thrust::transform_reduce(
 void findNewCentroids(int& n, int& N, int& k, thrust::device_vector<float>& d_data, thrust::device_vector<float>& d_centr,
                       thrust::device_vector<int>& indices, thrust::device_vector<int>& d_clusters, thrust::device_vector<int>& clusterSizes,
                       thrust::device_vector<int>& data_starts, thrust::device_vector<int>& data_ends, thrust::device_vector<float>& vectorsInCluster,
-                       thrust::device_vector<float>& actual_indices, thrust::device_vector<float>& fcol_sums){
+                       thrust::device_vector<float>& actual_indices, thrust::device_vector<float>& fcol_sums, thrust::device_vector<bool>& docopy){
   thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
 
@@ -327,7 +327,7 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
     thrust::copy(d_clusters.begin(), d_clusters.end(), old_d_clusters.begin()); // preprocessing
 
     // new centorids computation
-    findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters, clusterSizes, data_starts,  data_ends, vectorsInCluster, actual_indices, fcol_sums);
+    findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters, clusterSizes, data_starts,  data_ends, vectorsInCluster, actual_indices, fcol_sums, docopy);
 
     ++numIters;
   }
