@@ -307,7 +307,7 @@ void defineArrays(int &N, int &k, int *&assignments, int *&d_assignments,
 }
 
 void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
-                          Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C) {
+                          Matrix &C, Matrix &d_A, Matrix &d_B, Matrix &d_C, int *&clusters) {
   cudaEvent_t startStage, stopStage;
   int numIters = 0; // number of iterations
   int changes =
@@ -379,6 +379,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
     ++numIters;
   }
+  cudaMemcpy(clusters, d_newassignments, N*sizeof(int), cudaMemcpyDeviceToHost);
   std::cout << "Elapsed Time [Distance calculation stage] = "
             << elapsedTimeCalcDist << " milliseconds\n";
   std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
@@ -418,6 +419,7 @@ int main(int argc, char **argv) {
   // data declaration
   Matrix A, B, C, d_A, d_B, d_C;
   int N, n, k;
+  int *clusters;
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
@@ -443,7 +445,7 @@ int main(int argc, char **argv) {
 
   // K-means clusterization
   cudaEventRecord(start, 0);
-  KMeansClusterization(N, n, k, A, B, C, d_A, d_B, d_C);
+  KMeansClusterization(N, n, k, A, B, C, d_A, d_B, d_C, clusters);
   cudaEventRecord(stop, 0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTime, start, stop);
@@ -457,6 +459,7 @@ int main(int argc, char **argv) {
     for (int j = 0; j < B.realHeight; ++j) {
       std::cout << GetElement(B, j, i) << " ";
     }
+    std::cout<<clusters[i];
     std::cout << std::endl;
   }
 
