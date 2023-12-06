@@ -453,11 +453,11 @@ int main(int argc, char **argv) {
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
   std::cout << "Centroids:" << std::endl;
-  for (int i = 0; i < B.realWidth; ++i) {
-    for (int j = 0; j < B.realHeight; ++j) {
+  for (int i = 0; i < B.realHeight; ++i) {
+    for (int j = 0; j < B.realWidth; ++j) {
       std::cout << GetElement(B, i, j) << " ";
     }
-    std::cout<<'\n';
+    std::cout << std::endl;
   }
 
   delete[] A.elements;
