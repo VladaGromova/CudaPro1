@@ -143,8 +143,8 @@ __device__ Matrix GetSubMatrix(Matrix A, int row, int col) {
   return Asub;
 }
 
-__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C,
-                                   /*unsigned long long *time*/) {
+__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C
+                                   /* , unsigned long long *time*/) {
 
   int blockRow = blockIdx.y;
   int blockCol = blockIdx.x;
