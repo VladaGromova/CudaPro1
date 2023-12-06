@@ -336,8 +336,7 @@ int main(int argc, char** argv) {
   // cudaMalloc(&d_assignments, N * sizeof(int));
   // cudaMemcpy(d_assignments, assignments, N * sizeof(int),
   //            cudaMemcpyHostToDevice);
-   int *assignments;
-  int *d_assignments;
+  int *assignments, *d_assignments;
   defineArray(assignments, d_assignments, N);
 
   int *newassignments = new int[N];
