@@ -275,12 +275,23 @@ void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
 }
 
-void defineArray(int*& assignments, int*& d_assignments, int& N){ 
+void defineArray(int& N, int& k, int*& assignments, int*& d_assignments, int*& numOfVectorsInClusters, int*& d_numOfVectorsInClusters){ 
   assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
   cudaMalloc(&d_assignments, N * sizeof(int));
   cudaMemcpy(d_assignments, assignments, N * sizeof(int),
              cudaMemcpyHostToDevice);
+
+  newassignments = new int[N];
+  std::fill(newassignments, newassignments + N, 0);
+  cudaMalloc(&d_newassignments, N * sizeof(int));
+  cudaMemcpy(d_newassignments, newassignments, N * sizeof(int),
+             cudaMemcpyHostToDevice);
+
+  numOfVectorsInClusters = new int[k];
+  std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
+  cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
+  cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
 }
 
 int main(int argc, char** argv) {
@@ -336,21 +347,21 @@ int main(int argc, char** argv) {
   // cudaMalloc(&d_assignments, N * sizeof(int));
   // cudaMemcpy(d_assignments, assignments, N * sizeof(int),
   //            cudaMemcpyHostToDevice);
-  int *assignments, *d_assignments;
-  defineArray(assignments, d_assignments, N);
+  int *assignments, *d_assignments, *newassignments, *d_newassignments,  *numOfVectorsInClusters, *d_numOfVectorsInClusters;
+  defineArray(N, k, assignments, d_assignments, newassignments, d_newassignments, numOfVectorsInClusters, d_numOfVectorsInClusters);
 
-  int *newassignments = new int[N];
-  std::fill(newassignments, newassignments + N, 0);
-  int *d_newassignments;
-  cudaMalloc(&d_newassignments, N * sizeof(int));
-  cudaMemcpy(d_newassignments, newassignments, N * sizeof(int),
-             cudaMemcpyHostToDevice);
+  // int *newassignments = new int[N];
+  // std::fill(newassignments, newassignments + N, 0);
+  // int *d_newassignments;
+  // cudaMalloc(&d_newassignments, N * sizeof(int));
+  // cudaMemcpy(d_newassignments, newassignments, N * sizeof(int),
+  //            cudaMemcpyHostToDevice);
 
-  int *numOfVectorsInClusters = new int[k];
-  std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
-  int *d_numOfVectorsInClusters;
-  cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
-  cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
+  // int *numOfVectorsInClusters = new int[k];
+  // std::fill(numOfVectorsInClusters, numOfVectorsInClusters + k, 0);
+  // int *d_numOfVectorsInClusters;
+  // cudaMalloc(&d_numOfVectorsInClusters, k * sizeof(int));
+  // cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
 
   int numIters = 0;
   int changes = INT_MAX;
