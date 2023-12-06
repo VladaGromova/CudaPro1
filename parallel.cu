@@ -461,7 +461,7 @@ int main(int argc, char **argv) {
     }
     std::cout << std::endl;
   }
-
+  std::cout<<"Points:\n";
   for(int i=0; i<A.realHeight; ++i){
     for(int j=0; j<A.realWidth; ++j){
       std::cout<<GetElement(A,  i,  j)<<" ";
