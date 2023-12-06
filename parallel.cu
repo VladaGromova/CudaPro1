@@ -247,11 +247,11 @@ __global__ void ComputeSum(Matrix matA, const int *groups, Matrix matB, int N,
 void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix& B, Matrix& C){
   std::string inputString;
   getline(inputFile, inputString);
-  int N = atoi(inputString.c_str()); // real A height, real C height
+  N = atoi(inputString.c_str()); // real A height, real C height
   getline(inputFile, inputString);
-  int n = atoi(inputString.c_str()); // real A width, real B height
+  n = atoi(inputString.c_str()); // real A width, real B height
   getline(inputFile, inputString);
-  int k = atoi(inputString.c_str()); // real B width, real C width
+  k = atoi(inputString.c_str()); // real B width, real C width
 
   // A is N*n, but I want be able to split A into full blocks, so I want the height and the width be divisible by BLOCK_SIZE
   // Same for B (n*k) and C (N*k)
