@@ -222,8 +222,8 @@ delta = thrust::transform_reduce(
 }
 
 void findNewCentroids(int& n, int& N, int& k, thrust::device_vector<float>& d_data, thrust::device_vector<float>& d_centr,
-                      thrust::device_vector<int>& indices, thrust::device_vector<int>& d_clusters, thrust::device_vector<int>& clusterSizes
-                      thrust::device_vector<int>& data_starts, thrust::device_vector<int>& data_ends, thrust::device_vector<float>& vectorsInCluster
+                      thrust::device_vector<int>& indices, thrust::device_vector<int>& d_clusters, thrust::device_vector<int>& clusterSizes,
+                      thrust::device_vector<int>& data_starts, thrust::device_vector<int>& data_ends, thrust::device_vector<float>& vectorsInCluster,
                        thrust::device_vector<float>& actual_indices, thrust::device_vector<float>& fcol_sums){
   thrust::sequence(indices.begin(), indices.end());
     thrust::sort_by_key(d_clusters.begin(), d_clusters.end(), indices.begin());
