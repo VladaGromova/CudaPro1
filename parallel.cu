@@ -141,7 +141,7 @@ __device__ Matrix GetSubMatrix(Matrix A, int row, int col) {
   return Asub;
 }
 
-__global__ void CalculateDistances(Matrix& A, Matrix& B, Matrix& C) {
+__global__ void CalculateDistances(Matrix A, Matrix B, Matrix C) {
 
   int blockRow = blockIdx.y;
   int blockCol = blockIdx.x;
