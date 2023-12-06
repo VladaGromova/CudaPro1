@@ -299,9 +299,20 @@ int main(int argc, char** argv) {
   int N; 
   int n;
   int k;
+
+  cudaEvent_t start, stop;
+  float elapsedTime;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start,0);
+
   readFile(inputFile, N, n, k, A, B, C);
-  
   inputFile.close();
+
+cudaEventRecord(stop,0);
+cudaEventSynchronize(stop);
+cudaEventElapsedTime(&elapsedTime,start,stop);
+std::cout<<"\n\n[Read data]Elapsed Time = "<<elapsedTime<<" milliseconds";
 
   Matrix d_A, d_B, d_C;
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
