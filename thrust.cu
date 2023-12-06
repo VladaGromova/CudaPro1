@@ -265,7 +265,9 @@ void findNewCentroids(int &n, int &N, int &k,
     std::cout << "test for\n";
     thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(),
                     vectorsInCluster.begin(), is_true());
+    std::cout << "test for\n";
     thrust::sequence(fcol_sums.begin(), fcol_sums.end());
+    std::cout << "test for\n";
     thrust::transform(
         fcol_sums.begin(), fcol_sums.end(), d_centr.begin() + i * n,
         centr_sum_functor(clusterSizes[i], n,
