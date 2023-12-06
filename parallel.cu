@@ -346,11 +346,13 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeCalcDist += tmpTime;
 
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     // memory reseting
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
 
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     // nearest centroid searching
     cudaEventRecord(startStage, 0);
     MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
@@ -359,6 +361,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeFindMin += tmpTime;
 
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     // cluster changes counting
     cudaEventRecord(startStage, 0);
     CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
@@ -368,6 +371,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComapreArrays += tmpTime;
 
+    std::cout<<"Iteration nr "<< numIters<<'\n';
     // new centorids computation
     cudaEventRecord(startStage, 0);
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
