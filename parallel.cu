@@ -410,21 +410,21 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   cudaFree(d_changes);
 }
 
-void writeDataToFile(float* data, const int* clusters, int N, int n) {
+void writeDataToFile(Matrix data, const int* clusters, int N, int n) {
     //std::ofstream outputFile(filename); // Open the file for writing (will overwrite existing file)
     std::ofstream outputFile;
     outputFile.open("out_parallel.txt");
     if (outputFile.is_open()) {
         for (int i = 0; i < N; ++i) {
             for (int j = 0; j < n; ++j) {
-                outputFile << data[i * n + j] << ' ';
+                outputFile << GetElement(data, i, j) << ' ';
             }
             outputFile << clusters[i] << '\n';
         }
         outputFile.close();
-        std::cout << "Data written to " << filename << " successfully." << std::endl;
+        std::cout << "Data written successfully \n" << std::endl;
     } else {
-        std::cout << "Unable to open the file: " << filename << std::endl;
+        std::cout << "Unable to open the file \n"<< std::endl;
     }
 }
 
@@ -498,7 +498,7 @@ int main(int argc, char **argv) {
     std::cout<<clusters[i]<<'\n';
   }
 
-  writeDataToFile(data, clusters, N, n);
+  writeDataToFile(A, clusters, N, n);
 
   // memory deallocation
   delete[] A.elements;
