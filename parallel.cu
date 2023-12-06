@@ -275,7 +275,7 @@ void readFile(std::istream &inputFile, int& N, int& n, int& k, Matrix& A, Matrix
   InitializeMatrix(C, B_width, A_height, k, N); // C will contain distances
 }
 
-void defineArray(int& N, int& k, int*& assignments, int*& d_assignments, int*& numOfVectorsInClusters, int*& d_numOfVectorsInClusters){ 
+void defineArray(int& N, int& k, int*& assignments, int*& d_assignments, int*& newassignments, int*& d_newassignments, int*& numOfVectorsInClusters, int*& d_numOfVectorsInClusters){ 
   assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
   cudaMalloc(&d_assignments, N * sizeof(int));
