@@ -338,7 +338,7 @@ int main(int argc, char **argv) {
   float *data;// = new float[N * n];
   float *centroids;// = new float[k * n];
   int *clusters;
-  int N, int n, int k;
+  int N, n, k;
 
   //read data from file
   readFile(inputFile, N, n, k, data, centroids);
