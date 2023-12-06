@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
       std::cout << "Usage: ./cufile InputFile \n";
       return 1;
     }
-  std::ifstream inputFile();
+  std::ifstream inputFile;
   inputFile.open(inFile.c_str(), std::ios::in);
   if (!inputFile.is_open()) {
         std::cout << "Error opening file: " << inFile << std::endl;
