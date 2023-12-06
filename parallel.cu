@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
-  float elapsedTimeFullAlgoritm, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin, elapsedTimeComapreArrays, elapsedTimeComputeAverage, tmpTime;
+  float elapsedTimeFullAlgoritm, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0, elapsedTimeComapreArrays = 0.0, elapsedTimeComputeAverage = 0.0, tmpTime;
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   cudaEventRecord(start,0);
@@ -380,19 +380,40 @@ int main(int argc, char** argv) {
     CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C); // C[i,j] - distance between i-th vector and j-th centroid
     cudaEventRecord(stopStage,0);
     cudaEventSynchronize(stopStage);
-  cudaEventElapsedTime(&tmpTime,startStage,stopStage);
-elapsedTimeCalcDist += tmpTime;
+    cudaEventElapsedTime(&tmpTime,startStage,stopStage);
+    elapsedTimeCalcDist += tmpTime;
 
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
+
+    
+    cudaEventRecord(startStage,0);
     MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
+    cudaEventRecord(stopStage,0);
+    cudaEventSynchronize(stopStage);
+    cudaEventElapsedTime(&tmpTime,startStage,stopStage);
+    elapsedTimeFindMin += tmpTime;
+
+    cudaEventRecord(startStage,0);
     CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_newassignments, d_assignments, N, d_changes);
+    cudaEventRecord(stopStage,0);
+    cudaEventSynchronize(stopStage);
+    cudaEventElapsedTime(&tmpTime,startStage,stopStage);
+    elapsedTimeComapreArrays += tmpTime;
+
+    cudaEventRecord(startStage,0);
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
+
     ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_B, d_numOfVectorsInClusters, k, n);
+    cudaEventRecord(stopStage,0);
+    cudaEventSynchronize(stopStage);
+    cudaEventElapsedTime(&tmpTime,startStage,stopStage);
+    elapsedTimeComputeAverage += tmpTime;
+
     cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
                cudaMemcpyDeviceToDevice);
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
@@ -402,7 +423,10 @@ elapsedTimeCalcDist += tmpTime;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTimeFullAlgoritm,start,stop);
   std::cout<<"Elapsed Time [Full algorithm] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
-  std::cout<<"Elapsed Time [Calc dist algorithm] = "<<elapsedTimeCalcDist<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Distance calculation stage] = "<<elapsedTimeCalcDist<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Finding minimum stage] = "<<elapsedTimeFindMin<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Array comparing stage] = "<<elapsedTimeComapreArrays<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Computing average stage] = "<<elapsedTimeComputeAverage<<" milliseconds\n";
 
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
@@ -416,6 +440,9 @@ elapsedTimeCalcDist += tmpTime;
   }
   
   freeMemory(A, B, C, assignments, newassignments, numOfVectorsInClusters, d_A, d_B, d_C, d_assignments, d_newassignments, d_numOfVectorsInClusters, d_changes);
-
+  cudaEventDestroy(start); 
+  cudaEventDestroy(stop);
+  cudaEventDestroy(startStage);
+  cudaEventDestroy(stopStage);
   return 0;
 }
