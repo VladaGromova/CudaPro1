@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define GLEW_STATIC // This must be defined when statically linking to GLEW
-#include "glew.h"
+#include <glew.h>
 
 #pragma comment (lib, "glew32s.lib")
 
