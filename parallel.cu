@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
   Matrix A, B, C; 
   int N, n, k;
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start, stop, startStage, stopStage;
   float elapsedTime;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
