@@ -156,9 +156,21 @@ struct NotEqual {
 
 unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
                                     int k, int n, int N, int print) {
+                                      
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  float elapsedTime;
 
+  cudaEventRecord(start, 0);
   thrust::device_vector<float> d_data(data, data + n*N);
   thrust::device_vector<float> d_centr(cs, cs + n*k);
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime, start, stop);
+  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
+            << " milliseconds\n";
+
   thrust::device_vector<float> values_out(k * N);
 
   int delta = INT_MAX;
@@ -290,6 +302,9 @@ unsigned long long eucl_dist_thrust(float *&data, float *&cs, int *&clstrs,
 
   compute_time = dtime_usec(compute_time);
   std::cout << "Iterations:" << numIters << '\n';
+  
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
   return compute_time;
 }
 
