@@ -305,17 +305,21 @@ int main(int argc, char** argv) {
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
   cudaEventRecord(start,0);
-
   readFile(inputFile, N, n, k, A, B, C);
+  cudaEventRecord(stop,0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime,start,stop);
+  std::cout<<"\n[Data reading] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
   inputFile.close();
 
-cudaEventRecord(stop,0);
-cudaEventSynchronize(stop);
-cudaEventElapsedTime(&elapsedTime,start,stop);
-std::cout<<"\n\n[Read data]Elapsed Time = "<<elapsedTime<<" milliseconds";
-
   Matrix d_A, d_B, d_C;
+  cudaEventRecord(start,0);
   InitializeDeviceMatrices(A, B, C, d_A, d_B, d_C);
+  cudaEventRecord(stop,0);
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&elapsedTime,start,stop);
+  std::cout<<"\n[CPU - GPU copying] Elapsed Time = "<<elapsedTime<<" milliseconds\n";
+
 
   dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
   dim3 dimGrid((int)ceil((double)B.width / (double)dimBlock.x),
