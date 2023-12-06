@@ -284,7 +284,7 @@ void readFile(std::istream &inputFile, int &N, int &n, int &k, Matrix &A,
 void defineArrays(int &N, int &k, int *&assignments, int *&d_assignments,
                   int *&newassignments, int *&d_newassignments,
                   int *&numOfVectorsInClusters, int *&d_numOfVectorsInClusters,
-                  int *&d_changes) {
+                  int *&d_changes, int *&clusters) {
   assignments = new int[N];
   std::fill(assignments, assignments + N, 0);
   cudaMalloc(&d_assignments, N * sizeof(int));
@@ -304,6 +304,8 @@ void defineArrays(int &N, int &k, int *&assignments, int *&d_assignments,
 
   cudaMalloc(&d_changes, sizeof(int));
   cudaMemset(d_changes, 0, sizeof(int));
+
+  clusters = new int[N];
 }
 
 void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
@@ -311,8 +313,7 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
                           int *&clusters) {
   cudaEvent_t startStage, stopStage;
   int numIters = 0; // number of iterations
-  int changes =
-      INT_MAX; // number of vectors that changed cluster during last iteration
+  int changes = INT_MAX; // number of vectors that changed cluster during last iteration
   int *assignments, *d_assignments, *newassignments, *d_newassignments,
       *numOfVectorsInClusters, *d_numOfVectorsInClusters, *d_changes;
   float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
@@ -329,14 +330,13 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
   // of vectors in i-th cluster
   defineArrays(N, k, assignments, d_assignments, newassignments,
                d_newassignments, numOfVectorsInClusters,
-               d_numOfVectorsInClusters, d_changes);
+               d_numOfVectorsInClusters, d_changes, clusters);
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
   cudaEventCreate(&startStage);
   cudaEventCreate(&stopStage);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
-    std::cout << "Iteration nr " << numIters << '\n';
     // distances calculation
     cudaEventRecord(startStage, 0);
     CalculateDistances<<<dimGrid, dimBlock>>>(
@@ -347,13 +347,11 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeCalcDist += tmpTime;
 
-    std::cout << "Iteration nr " << numIters << '\n';
     // memory reseting
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
 
-    std::cout << "Iteration nr " << numIters << '\n';
     // nearest centroid searching
     cudaEventRecord(startStage, 0);
     MinInEachRow<<<gridSize, MAX_THREADS_IN_BLOCK>>>(d_C, d_newassignments);
@@ -362,7 +360,6 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeFindMin += tmpTime;
 
-    std::cout << "Iteration nr " << numIters << '\n';
     // cluster changes counting
     cudaEventRecord(startStage, 0);
     CompareArrays<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
@@ -372,13 +369,11 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
     cudaEventElapsedTime(&tmpTime, startStage, stopStage);
     elapsedTimeComapreArrays += tmpTime;
 
-    std::cout << "Iteration nr " << numIters << '\n';
     // new centorids computation
     cudaEventRecord(startStage, 0);
     ComputeSum<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_A, d_newassignments, d_B, N, k, n, d_numOfVectorsInClusters);
 
-    std::cout << "Iteration nr " << numIters << '\n';
     ComputeAverage<<<gridSize, MAX_THREADS_IN_BLOCK>>>(
         d_B, d_numOfVectorsInClusters, k, n);
     cudaEventRecord(stopStage, 0);
@@ -392,10 +387,9 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
                      cudaMemcpyDeviceToDevice);
 
     cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
-    std::cout << "Iteration nr " << numIters << '\n';
     ++numIters;
   }
-
+  std::cout<<"It will be cluster copying...\n";
   cudaMemcpy(clusters, d_newassignments, N * sizeof(int),
              cudaMemcpyDeviceToHost);
   std::cout << "Elapsed Time [Distance calculation stage] = "
