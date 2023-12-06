@@ -371,10 +371,18 @@ int main(int argc, char** argv) {
 
   int gridSize = C.realHeight / MAX_THREADS_IN_BLOCK + 1;
 
-  float elapsedTimeFullAlgoritm;
+  float elapsedTimeFullAlgoritm, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin, elapsedTimeComapreArrays, elapsedTimeComputeAverage, tmpTime;
+  cudaEventCreate(&startStage);
+  cudaEventCreate(&stopStage);
   cudaEventRecord(start,0);
   while (numIters < MAX_ITERATIONS && (float)changes / (float)N > EPS) {
+    cudaEventRecord(startStage,0);
     CalculateDistances<<<dimGrid, dimBlock>>>(d_A, d_B, d_C); // C[i,j] - distance between i-th vector and j-th centroid
+    cudaEventRecord(stopStage,0);
+    cudaEventSynchronize(stopStage);
+  cudaEventElapsedTime(&tmpTime,startStage,stopStage);
+elapsedTimeCalcDist += tmpTime;
+
     cudaMemset(d_B.elements, 0.0, d_B.height * d_B.width * sizeof(float));
     cudaMemset(d_numOfVectorsInClusters, 0, k * sizeof(int));
     cudaMemset(d_changes, 0, sizeof(int));
@@ -393,7 +401,8 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop,0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&elapsedTimeFullAlgoritm,start,stop);
-  std::cout<<"\nElapsed Time [Full algorithm] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Full algorithm] = "<<elapsedTimeFullAlgoritm<<" milliseconds\n";
+  std::cout<<"Elapsed Time [Calc dist algorithm] = "<<elapsedTimeCalcDist<<" milliseconds\n";
 
   cudaMemcpy(B.elements, d_B.elements, B.width * B.height * sizeof(float),
              cudaMemcpyDeviceToHost);
