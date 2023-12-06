@@ -464,7 +464,7 @@ int main(int argc, char **argv) {
 
   for(int i=0; i<A.realHeight; ++i){
     for(int j=0; j<A.realWidth; ++j){
-      std::cout<<GetElement(A, int i, int j)<<" ";
+      std::cout<<GetElement(A,  i,  j)<<" ";
     }
     std::cout<<clusters[i]<<'\n';
   }
