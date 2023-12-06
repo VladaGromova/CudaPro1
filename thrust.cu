@@ -248,8 +248,9 @@ void findNewCentroids(int &n, int &N, int &k,
   thrust::inclusive_scan(clusterSizes.begin(), clusterSizes.end(),
                          data_ends.begin());
   std::cout << "test\n";
+  vectorsInCluster.resize(N * n);
   for (int i = 0; i < k; ++i) {
-    vectorsInCluster.resize(clusterSizes[i] * n);
+    //vectorsInCluster.resize(clusterSizes[i] * n);
     actual_indices.resize(clusterSizes[i]);
     thrust::copy(indices.begin() + data_starts[i], indices.end() + data_ends[i],
                  actual_indices.begin());
@@ -263,8 +264,10 @@ void findNewCentroids(int &n, int &N, int &k,
             N * n,
         docopy.begin());
     std::cout << "test for\n";
+    // HERE IS ERROR
     thrust::copy_if(d_data.begin(), d_data.end(), docopy.begin(),
                     vectorsInCluster.begin(), is_true());
+                    vectorsInCluster.resize(clusterSizes[i] * n);
     std::cout << "test for\n";
     thrust::sequence(fcol_sums.begin(), fcol_sums.end());
     std::cout << "test for\n";
