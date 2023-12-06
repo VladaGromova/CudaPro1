@@ -388,28 +388,14 @@ void KMeansClusterization(int &N, int &n, int &k, Matrix &A, Matrix &B,
 
     // cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
     //            cudaMemcpyDeviceToDevice);
-    cudaError_t ret;
-    ret = cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
+    cudaMemcpy(d_assignments, d_newassignments, N * sizeof(int),
                      cudaMemcpyDeviceToDevice);
-    if (ret == cudaErrorInvalidValue) {
-      printf("1!\n");
-    } else if (ret == cudaErrorInvalidDevicePointer) {
-      printf("2!\n");
-    } else if(ret == cudaErrorInvalidMemcpyDirection){
-      printf("3!\n");
-    }
 
-    ret = cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
-    if (ret == cudaErrorInvalidValue) {
-      printf("1!\n");
-    } else if (ret == cudaErrorInvalidDevicePointer) {
-      printf("2!\n");
-    } else if(ret == cudaErrorInvalidMemcpyDirection){
-      printf("3!\n");
-    }
+    cudaMemcpy(&changes, d_changes, sizeof(int), cudaMemcpyDeviceToHost);
+    std::cout << "Iteration nr " << numIters << '\n';
     ++numIters;
   }
-  
+
   cudaMemcpy(clusters, d_newassignments, N * sizeof(int),
              cudaMemcpyDeviceToHost);
   std::cout << "Elapsed Time [Distance calculation stage] = "
