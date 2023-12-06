@@ -12,10 +12,7 @@
 
 
 #pragma hd_warning_disable
-// #define FILENAME "points_generated.txt"
-//#define FILENAME "data.txt"
-// #define FILENAME "myData.txt"
- #define FILENAME "cluster_data.txt"
+ //#define FILENAME "cluster_data.txt"
 
 #define BLOCK_SIZE 16
 #define MAX_ITERATIONS 100
@@ -235,8 +232,16 @@ __global__ void ComputeSum(Matrix matA, const int *groups, Matrix matB, int N,
   __syncthreads();
 }
 
-int main() {
-  std::ifstream inputFile(FILENAME);
+int main(int argc, char** argv) {
+  string inFile = "";
+    if( argc == 2 ) {
+      inFile = argv[1];
+    }
+    else {
+      cout << "Usage: ./cufile InputFile \n";
+      return 1;
+    }
+  std::ifstream inputFile(inFile);
   std::string inputString;
   getline(inputFile, inputString);
   int N = atoi(inputString.c_str()); // real A height, real C height
