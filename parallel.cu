@@ -425,6 +425,23 @@ void writeDataToFile(Matrix data, const int* clusters, int N, int n) {
     }
 }
 
+void writeCentroidsToFile(Matrix data, int k, int n) {
+    std::ofstream outputFile;
+    outputFile.open("out_centroids_parallel.txt");
+    if (outputFile.is_open()) {
+        for (int i = 0; i < k; ++i) {
+            for (int j = 0; j < n; ++j) {
+                outputFile << GetElement(data, j, i) << ' ';
+            }
+            outputFile << '\n';
+        }
+        outputFile.close();
+        std::cout << "Centroids written successfully \n" << std::endl;
+    } else {
+        std::cout << "Unable to open the file \n"<< std::endl;
+    }
+}
+
 int main(int argc, char **argv) {
   // file validation
   std::string inFile = "";
@@ -482,7 +499,7 @@ int main(int argc, char **argv) {
              cudaMemcpyDeviceToHost);
 
   writeDataToFile(A, clusters, N, n);
-
+  writeCentroidsToFile(B, k, n);
   // memory deallocation
   delete[] A.elements;
   delete[] B.elements;
