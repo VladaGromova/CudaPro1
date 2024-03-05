@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <string>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
@@ -26,12 +26,6 @@
 #define MAX_ITERATIONS 100
 #define EPS 0.000001f
 
-unsigned long long dtime_usec(unsigned long long prev) {
-#define USECPSEC 1000000ULL
-  timeval tv1;
-  gettimeofday(&tv1, 0);
-  return ((tv1.tv_sec * USECPSEC) + tv1.tv_usec) - prev;
-}
 
 struct dkeygen : public thrust::unary_function<int, int> {
   int dim;
@@ -149,7 +143,7 @@ void calculateDistances(int &n, int &N, int &k,
                         thrust::device_vector<float> &d_data,
                         thrust::device_vector<float> &d_centr,
                         thrust::device_vector<float> &tmp_distances) {
-  // we wnt to imitate this structure: (c - centroids, v - vetors)
+  // we want to imitate this structure: (c - centroids, v - vetors)
   // c1 c2 ... ck | c1 c2 ... ck | ...
   // v1 v1 ... v1 | v2 v2 ... v2 | ...
   // => d(v1,c1) ... d(v1,cn) | ....
@@ -301,85 +295,35 @@ void KMeansClustering(float *&data, float *&cs, int *&clstrs, int k, int n,
   thrust::device_vector<int> data_ends(k); // ends of segments from indices
   thrust::device_vector<bool> docopy(N * n); // binary mask
   thrust::device_vector<float> fcol_sums(n);
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  float elapsedTime;
-  float tmpTime, elapsedTimeCalcDist = 0.0, elapsedTimeFindMin = 0.0,
-                 elapsedTimeComapreArrays = 0.0,
-                 elapsedTimeComputeAverage = 0.0;
-
+  
   // CPU - GPU copying
-  cudaEventRecord(start, 0);
   thrust::device_vector<float> d_data(data, data + n * N);
   thrust::device_vector<float> d_centr(cs, cs + n * k);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  std::cout << "Elapsed Time [CPU - GPU copying] = " << elapsedTime
-            << " milliseconds\n";
 
   while (numIters < MAX_ITERATIONS && (float)delta / (float)N > EPS) {
     delta = 0;
     
     // distance calculation
-    cudaEventRecord(start, 0);
     calculateDistances(n, N, k, d_data, d_centr, tmp_distances);
-    cudaDeviceSynchronize();
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&tmpTime, start, stop);
-    elapsedTimeCalcDist += tmpTime;
-
-    
+   cudaDeviceSynchronize();
     // nearest centroid searching
-    cudaEventRecord(start, 0);
     findNearestCentroid(k, N, d_centr, tmp_distances, mins, vec_modulus_k, d_clusters);
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&tmpTime, start, stop);
-    elapsedTimeFindMin += tmpTime;
-
     
     // cluster changes counting
-    cudaEventRecord(start, 0);
     countClusterChanges(delta, old_d_clusters, d_clusters);
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&tmpTime, start, stop);
-    elapsedTimeComapreArrays += tmpTime;
 
     thrust::copy(d_clusters.begin(), d_clusters.end(),
                  old_d_clusters.begin()); // preprocessing
 
     
     // new centorids computation
-    cudaEventRecord(start, 0);
     findNewCentroids(n, N, k, d_data, d_centr, indices, d_clusters,
                      clusterSizes, data_starts, data_ends, vectorsInCluster,
                      actual_indices, fcol_sums, docopy);
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&tmpTime, start, stop);
-    elapsedTimeComputeAverage += tmpTime;
-
- 
     ++numIters;
   }
   clstrs = new int[old_d_clusters.size()];
   thrust::copy(old_d_clusters.begin(), old_d_clusters.end(), clstrs);
- 
-  std::cout << "Elapsed Time [Distance calculation stage] = "
-            << elapsedTimeCalcDist << " milliseconds\n";
-  std::cout << "Elapsed Time [Finding minimum stage] = " << elapsedTimeFindMin
-            << " milliseconds\n";
-  std::cout << "Elapsed Time [Array comparing stage] = "
-            << elapsedTimeComapreArrays << " milliseconds\n";
-  std::cout << "Elapsed Time [Computing average stage] = "
-            << elapsedTimeComputeAverage << " milliseconds\n";
-
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
 }
 
 void writeDataToFile(float* data, const int* clusters, int N, int n) {
@@ -447,36 +391,16 @@ int main(int argc, char **argv) {
   float *centroids; // new centroids
   int *clusters; // clusters[i] == old cluster number for i-th vector
   int N, n, k;
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  float elapsedTime;
-
-  // data initialization from file
-  cudaEventRecord(start, 0);
   readFile(inputFile, N, n, k, data, centroids);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  std::cout << "\nElapsed Time [Data reading] = " << elapsedTime
-            << " milliseconds\n";
   inputFile.close();
 
   // K-means clusterization
-  cudaEventRecord(start, 0);
   KMeansClustering(data, centroids, clusters, k, n, N, 1);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  std::cout << "Elapsed Time [Full algorithm + time measurement] = "
-            << elapsedTime << " milliseconds\n";
 
   writeDataToFile(data, clusters, N, n);
 
   delete[] data;
   delete[] centroids;
   delete[] clusters;
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
   return 0;
 }
