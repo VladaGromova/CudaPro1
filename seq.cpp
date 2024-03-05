@@ -147,6 +147,23 @@ void writeDataToFile(std::vector<Point> points, std::vector<int> clusters, int N
   }
 }
 
+void writeCentroidsToFile(std::vector<Point> centroids) {
+  std::ofstream outputFile;
+  outputFile.open("out_centroids_seq.txt");
+  if (outputFile.is_open()) {
+    for (int i = 0; i < centroids.size(); i++) {
+      for (int j = 0; j < centroids[i].coordinates.size(); j++) {
+        outputFile << centroids[i].coordinates[j] << ' ';
+      }
+      outputFile << '\n';
+    }
+    outputFile.close();
+    std::cout << "Data written successfully \n" << std::endl;
+  } else {
+    std::cout << "Unable to open the file \n" << std::endl;
+  }
+}
+
 int main(int argc, char** argv) {
   auto start = high_resolution_clock::now();
   std::string inFile = "";
@@ -178,6 +195,8 @@ int main(int argc, char** argv) {
             << " ms\n";
   
   writeDataToFile(points,clusterIndexes ,N, n);
+
+  writeCentroidsToFile(centroids);
 
   return 0;
 }
