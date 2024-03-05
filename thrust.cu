@@ -370,6 +370,22 @@ void readFile(std::istream &inputFile, int &N, int &n, int &k, float *&data,
   }
 }
 
+void writeCentroidsToFile(const float* centroids, int k, int n) {
+    std::ofstream outputFile;
+    outputFile.open("out_centroids_thrust.txt");
+    if (outputFile.is_open()) {
+        for (int i = 0; i < k; ++i) {
+            for (int j = 0; j < n; ++j) {
+                outputFile << centroids[i*n + j] << ' ';
+            }
+        }
+        outputFile.close();
+        std::cout << "Centroids written successfully \n" << std::endl;
+    } else {
+        std::cout << "Unable to open the file \n"<< std::endl;
+    }
+}
+
 int main(int argc, char **argv) {
   // file validation
   std::string inFile = "";
@@ -398,6 +414,8 @@ int main(int argc, char **argv) {
   KMeansClustering(data, centroids, clusters, k, n, N, 1);
 
   writeDataToFile(data, clusters, N, n);
+
+  writeCentroidsToFile(centroids, k, n);
 
   delete[] data;
   delete[] centroids;
