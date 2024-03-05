@@ -324,6 +324,7 @@ void KMeansClustering(float *&data, float *&cs, int *&clstrs, int k, int n,
   }
   clstrs = new int[old_d_clusters.size()];
   thrust::copy(old_d_clusters.begin(), old_d_clusters.end(), clstrs);
+  thrust::copy(d_centr.begin(), d_centr.end(), cs);
 }
 
 void writeDataToFile(float* data, const int* clusters, int N, int n) {
@@ -378,6 +379,7 @@ void writeCentroidsToFile(const float* centroids, int k, int n) {
             for (int j = 0; j < n; ++j) {
                 outputFile << centroids[i*n + j] << ' ';
             }
+            outputFile<< '\n';
         }
         outputFile.close();
         std::cout << "Centroids written successfully \n" << std::endl;
